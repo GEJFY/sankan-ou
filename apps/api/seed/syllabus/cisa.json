@@ -1,0 +1,27 @@
+{
+  "code": "CISA",
+  "name": "Certified Information Systems Auditor（公認情報システム監査人）",
+  "color": "#0891b2",
+  "exam_config": {
+    "total_parts": 1,
+    "passing_score": "450/800",
+    "questions": 150,
+    "duration_minutes": 240,
+    "format": "multiple_choice"
+  },
+  "topics": [
+    {
+      "name": "CISA統合試験",
+      "level": 0,
+      "weight_pct": 100,
+      "exam_spec": "150問 / 240分",
+      "children": [
+        {"name": "D1. 情報システム監査プロセス", "level": 1, "weight_pct": 21},
+        {"name": "D2. ITのガバナンスとマネジメント", "level": 1, "weight_pct": 17},
+        {"name": "D3. IS取得・開発・実装", "level": 1, "weight_pct": 12},
+        {"name": "D4. IS運用とビジネスレジリエンス", "level": 1, "weight_pct": 23},
+        {"name": "D5. 情報資産の保護", "level": 1, "weight_pct": 27}
+      ]
+    }
+  ]
+}
