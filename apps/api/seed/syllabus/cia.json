@@ -1,0 +1,47 @@
+{
+  "code": "CIA",
+  "name": "Certified Internal Auditor（公認内部監査人）",
+  "color": "#e94560",
+  "exam_config": {
+    "total_parts": 3,
+    "passing_score": "600/750",
+    "format": "multiple_choice"
+  },
+  "topics": [
+    {
+      "name": "Part 1: Internal Audit Fundamentals（内部監査の基本）",
+      "level": 0,
+      "weight_pct": 33.3,
+      "exam_spec": "125問 / 150分",
+      "children": [
+        {"name": "A. 内部監査の目的と権限", "level": 1, "weight_pct": 40},
+        {"name": "B. 倫理と職業専門性", "level": 1, "weight_pct": 25},
+        {"name": "C. ガバナンスとリスクマネジメント", "level": 1, "weight_pct": 20},
+        {"name": "D. 不正リスク", "level": 1, "weight_pct": 12.5}
+      ]
+    },
+    {
+      "name": "Part 2: Practice of Internal Auditing（内部監査の実務）",
+      "level": 0,
+      "weight_pct": 33.3,
+      "exam_spec": "100問 / 120分",
+      "children": [
+        {"name": "A. 監査計画", "level": 1, "weight_pct": 35},
+        {"name": "B. 監査業務の実施", "level": 1, "weight_pct": 35},
+        {"name": "C. 監査結果と改善", "level": 1, "weight_pct": 30}
+      ]
+    },
+    {
+      "name": "Part 3: Business Knowledge for IA（ビジネス知識）",
+      "level": 0,
+      "weight_pct": 33.3,
+      "exam_spec": "100問 / 120分",
+      "children": [
+        {"name": "A. 一般的なビジネスプロセス", "level": 1, "weight_pct": 40},
+        {"name": "B. 情報テクノロジー", "level": 1, "weight_pct": 30},
+        {"name": "C. 財務管理", "level": 1, "weight_pct": 20},
+        {"name": "D. 組織行動", "level": 1, "weight_pct": 7.5}
+      ]
+    }
+  ]
+}

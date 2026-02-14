@@ -1,0 +1,68 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const NAV_ITEMS = [
+  { href: "/", label: "ダッシュボード", icon: "📊" },
+  { href: "/study", label: "学習", icon: "📚" },
+  { href: "/synergy", label: "シナジー学習", icon: "🔗" },
+  { href: "/quiz", label: "問題演習", icon: "✍️" },
+  { href: "/mock-exam", label: "模擬試験", icon: "📝" },
+  { href: "/tutor", label: "AI Tutor", icon: "🤖" },
+  { href: "/media", label: "スライド/音声", icon: "🎧" },
+  { href: "/achievements", label: "実績", icon: "🏆" },
+  { href: "/strategy", label: "受験戦略", icon: "🎯" },
+  { href: "/settings", label: "設定", icon: "⚙️" },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="w-64 bg-gray-900 border-r border-gray-800 min-h-screen p-4 flex flex-col">
+      <div className="mb-8">
+        <h1 className="text-xl font-bold">GRC Triple Crown</h1>
+        <p className="text-xs text-gray-500 mt-1">三冠王</p>
+      </div>
+
+      <nav className="flex-1 space-y-1">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? "bg-blue-600/20 text-blue-400"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-auto pt-4 border-t border-gray-800">
+        <div className="flex gap-2">
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: "#e94560" }}
+          />
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: "#0891b2" }}
+          />
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: "#7c3aed" }}
+          />
+        </div>
+        <p className="text-xs text-gray-600 mt-2">v0.3.0</p>
+      </div>
+    </aside>
+  );
+}

@@ -1,0 +1,26 @@
+{
+  "code": "CFE",
+  "name": "Certified Fraud Examiner（公認不正検査士）",
+  "color": "#7c3aed",
+  "exam_config": {
+    "total_parts": 4,
+    "passing_score": "各75%",
+    "questions_per_section": 100,
+    "duration_per_section_minutes": 120,
+    "format": "multiple_choice"
+  },
+  "topics": [
+    {
+      "name": "CFE 4セクション独立試験",
+      "level": 0,
+      "weight_pct": 100,
+      "exam_spec": "各100問×4 / 各120分",
+      "children": [
+        {"name": "S1. 財務取引と不正スキーム", "level": 1, "weight_pct": 25},
+        {"name": "S2. 法律（Law）", "level": 1, "weight_pct": 25},
+        {"name": "S3. 調査（Investigation）", "level": 1, "weight_pct": 25},
+        {"name": "S4. 不正防止と抑止", "level": 1, "weight_pct": 25}
+      ]
+    }
+  ]
+}
