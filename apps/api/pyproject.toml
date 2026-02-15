@@ -25,7 +25,7 @@ dependencies = [
     # SRS
     "fsrs>=6.0",
     # LLM
-    "anthropic>=0.40",
+    "openai>=1.50",
     # Validation / Config
     "pydantic>=2.7",
     "pydantic-settings>=2.4",

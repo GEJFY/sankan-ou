@@ -8,7 +8,7 @@ AI駆動型 CIA/CISA/CFE 3資格同時学習プラットフォーム
 - **Frontend**: `apps/web/` - Next.js 15 (App Router, TypeScript, Tailwind CSS)
 - **Database**: PostgreSQL 16 + pgvector (Docker)
 - **SRS**: py-fsrs v6 (FSRS algorithm)
-- **LLM**: Claude API (Sonnet 4.5 for generation, Haiku 4.5 for chat)
+- **LLM**: Azure OpenAI (GPT-4.1-mini for generation, GPT-4.1-nano for chat)
 
 ## Development Commands
 ```bash
@@ -47,7 +47,7 @@ alembic revision --autogenerate -m "description"
 - `src/schemas/` - Pydantic request/response schemas
 - `src/api/v1/` - FastAPI route handlers
 - `src/services/` - Business logic (FSRS, auth)
-- `src/llm/` - Claude API client + prompt templates
+- `src/llm/` - Azure OpenAI client + prompt templates
 - `seed/` - DB seed data + syllabus JSON
 
 ## Testing

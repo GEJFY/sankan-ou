@@ -1,1 +1,1 @@
-"""LLM (Claude API) abstraction layer"""
+"""LLM (Azure OpenAI) abstraction layer"""

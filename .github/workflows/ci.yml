@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api-test:
+    name: API Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: sankanou
+          POSTGRES_PASSWORD: sankanou_dev
+          POSTGRES_DB: sankanou
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+asyncpg://sankanou:sankanou_dev@localhost:5433/sankanou
+          JWT_SECRET: ci-test-secret
+          AZURE_OPENAI_ENDPOINT: https://dummy.openai.azure.com/
+          AZURE_OPENAI_API_KEY: ""
+        run: python -m pytest tests/ -v --tb=short
+
+  web-build:
+    name: Web Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Type check & build
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: npm run build
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f docker/api/Dockerfile.prod -t api-test .
+
+      - name: Build Web image
+        run: docker build -f docker/web/Dockerfile.prod --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 -t web-test .
