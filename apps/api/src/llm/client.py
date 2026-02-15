@@ -55,7 +55,7 @@ async def _openai_generate(
     client = _get_openai_client()
     response = await client.chat.completions.create(
         model=model,
-        max_tokens=max_tokens,
+        max_completion_tokens=max_tokens,
         messages=messages,
         temperature=temperature,
     )
@@ -68,7 +68,7 @@ async def _openai_stream(
     client = _get_openai_client()
     stream = await client.chat.completions.create(
         model=model,
-        max_tokens=max_tokens,
+        max_completion_tokens=max_tokens,
         messages=messages,
         temperature=temperature,
         stream=True,
