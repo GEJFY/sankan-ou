@@ -41,8 +41,8 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://sankanou:sankanou_dev@localhost:5433/sankanou
           JWT_SECRET: ci-test-secret
-          AZURE_OPENAI_ENDPOINT: https://dummy.openai.azure.com/
-          AZURE_OPENAI_API_KEY: ""
+          AZURE_FOUNDRY_ENDPOINT: https://dummy.services.ai.azure.com
+          AZURE_FOUNDRY_API_KEY: ""
         run: python -m pytest tests/ -v --tb=short
 
   web-build:

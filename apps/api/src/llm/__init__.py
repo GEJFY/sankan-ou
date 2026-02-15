@@ -1,1 +1,1 @@
-"""LLM (Azure OpenAI) abstraction layer"""
+"""LLM (Azure AI Foundry) abstraction layer - OpenAI + Anthropic マルチプロバイダー"""

@@ -24,10 +24,16 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
-    # Azure OpenAI
-    azure_openai_endpoint: str = ""
-    azure_openai_api_key: str = ""
-    azure_openai_api_version: str = "2024-12-01-preview"
+    # Azure AI Foundry (統一エンドポイント)
+    azure_foundry_endpoint: str = ""
+    azure_foundry_api_key: str = ""
+    azure_foundry_api_version: str = "2024-12-01-preview"
+
+    # LLM モデル選択 (環境変数で切り替え可能)
+    # OpenAI系: gpt-4-1-mini, gpt-4-1-nano, gpt-5.2
+    # Claude系: claude-opus-4-6, claude-haiku-4-5
+    llm_model_generation: str = "gpt-4-1-mini"
+    llm_model_chat: str = "gpt-4-1-nano"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3001"]

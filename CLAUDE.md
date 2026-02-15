@@ -8,7 +8,10 @@ AI駆動型 CIA/CISA/CFE 3資格同時学習プラットフォーム
 - **Frontend**: `apps/web/` - Next.js 15 (App Router, TypeScript, Tailwind CSS)
 - **Database**: PostgreSQL 16 + pgvector (Docker)
 - **SRS**: py-fsrs v6 (FSRS algorithm)
-- **LLM**: Azure OpenAI (GPT-4.1-mini for generation, GPT-4.1-nano for chat)
+- **LLM**: Azure AI Foundry (マルチプロバイダー: OpenAI + Anthropic)
+  - OpenAI系: GPT-4.1-mini (生成), GPT-4.1-nano (チャット), GPT-5.2 (フラグシップ)
+  - Anthropic系: Claude Opus 4.6, Claude Haiku 4.5
+  - 環境変数 `LLM_MODEL_GENERATION` / `LLM_MODEL_CHAT` で切替可能
 
 ## Development Commands
 ```bash
@@ -47,7 +50,7 @@ alembic revision --autogenerate -m "description"
 - `src/schemas/` - Pydantic request/response schemas
 - `src/api/v1/` - FastAPI route handlers
 - `src/services/` - Business logic (FSRS, auth)
-- `src/llm/` - Azure OpenAI client + prompt templates
+- `src/llm/` - Azure AI Foundry client (OpenAI/Anthropic自動ルーティング) + prompt templates
 - `seed/` - DB seed data + syllabus JSON
 
 ## Testing
