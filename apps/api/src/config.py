@@ -30,10 +30,10 @@ class Settings(BaseSettings):
     azure_foundry_api_version: str = "2024-12-01-preview"
 
     # LLM モデル選択 (環境変数で切り替え可能)
-    # OpenAI系: gpt-4-1-mini, gpt-4-1-nano, gpt-5.2
-    # Claude系: claude-opus-4-6, claude-haiku-4-5
-    llm_model_generation: str = "gpt-4-1-mini"
-    llm_model_chat: str = "gpt-4-1-nano"
+    # GPT-5系: gpt-5.2-chat (フラグシップ), gpt-5-mini (コスパ), gpt-5-nano (低コスト)
+    # Claude系: claude-opus-4-6, claude-haiku-4-5 (Enterprise/MCA-Eサブスクリプション要)
+    llm_model_generation: str = "gpt-5-mini"
+    llm_model_chat: str = "gpt-5-nano"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3001"]

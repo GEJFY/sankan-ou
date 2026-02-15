@@ -1,6 +1,6 @@
 """Azure AI Foundry LLM client - マルチプロバイダー対応
 
-OpenAI系 (GPT-4.1, GPT-5.2等) と Anthropic系 (Claude) を
+GPT-5系 (GPT-5.2, GPT-5-mini, GPT-5-nano) と Anthropic系 (Claude Opus 4.6, Haiku 4.5) を
 Azure AI Foundry の統一エンドポイント経由で利用する。
 モデル名のプレフィックスで自動ルーティング。
 """
@@ -14,14 +14,14 @@ from src.config import settings
 # ============================================
 # 利用可能モデル定義
 # ============================================
-# OpenAI系 (Azure AI Foundry / Azure OpenAI)
-GPT_41_MINI = "gpt-4-1-mini"       # コスパ生成 $0.40/$1.60 / 1M ctx
-GPT_41_NANO = "gpt-4-1-nano"       # 超低コスト $0.10/$0.40 / 1M ctx
-GPT_52 = "gpt-5.2"                 # フラグシップ $1.75/$14 / 400K ctx (登録制)
+# OpenAI系 (Azure AI Foundry)
+GPT_52_CHAT = "gpt-5.2-chat"       # フラグシップ / 400K ctx (Preview)
+GPT_5_MINI = "gpt-5-mini"          # コスパ生成 / 1M ctx (GA)
+GPT_5_NANO = "gpt-5-nano"          # 超低コスト / 1M ctx (GA)
 
-# Anthropic系 (Azure AI Foundry Marketplace)
-CLAUDE_OPUS_46 = "claude-opus-4-6"     # 最高品質 $5/$25
-CLAUDE_HAIKU_45 = "claude-haiku-4-5"   # 高速 $1/$5
+# Anthropic系 (Azure AI Foundry - Enterprise/MCA-Eサブスクリプション要)
+CLAUDE_OPUS_46 = "claude-opus-4-6"     # 最高品質 1M ctx (Preview)
+CLAUDE_HAIKU_45 = "claude-haiku-4-5"   # 高速 200K ctx (Preview)
 
 # デフォルトモデル (環境変数で上書き可能)
 MODEL_GENERATION = settings.llm_model_generation  # 解説生成・問題生成
@@ -38,7 +38,7 @@ def _is_claude(model: str) -> bool:
 
 
 # ============================================
-# OpenAI系クライアント
+# OpenAI系クライアント (GPT-5 via Azure AI Foundry)
 # ============================================
 def _get_openai_client():
     from openai import AsyncAzureOpenAI
@@ -80,12 +80,13 @@ async def _openai_stream(
 
 # ============================================
 # Anthropic系クライアント (Claude via Azure AI Foundry)
+# AnthropicFoundry SDK を使用 (Enterprise/MCA-Eサブスクリプション要)
 # ============================================
 def _get_anthropic_client():
-    import anthropic
-    return anthropic.AsyncAnthropic(
-        base_url=f"{settings.azure_foundry_endpoint.rstrip('/')}/anthropic",
+    from anthropic import AnthropicFoundry
+    return AnthropicFoundry(
         api_key=settings.azure_foundry_api_key,
+        base_url=f"{settings.azure_foundry_endpoint.rstrip('/')}/anthropic",
     )
 
 

@@ -9,8 +9,8 @@ AI駆動型 CIA/CISA/CFE 3資格同時学習プラットフォーム
 - **Database**: PostgreSQL 16 + pgvector (Docker)
 - **SRS**: py-fsrs v6 (FSRS algorithm)
 - **LLM**: Azure AI Foundry (マルチプロバイダー: OpenAI + Anthropic)
-  - OpenAI系: GPT-4.1-mini (生成), GPT-4.1-nano (チャット), GPT-5.2 (フラグシップ)
-  - Anthropic系: Claude Opus 4.6, Claude Haiku 4.5
+  - GPT-5系: GPT-5-mini (生成), GPT-5-nano (チャット), GPT-5.2-chat (フラグシップ)
+  - Anthropic系: Claude Opus 4.6, Claude Haiku 4.5 (Enterprise/MCA-Eサブスクリプション要)
   - 環境変数 `LLM_MODEL_GENERATION` / `LLM_MODEL_CHAT` で切替可能
 
 ## Development Commands
