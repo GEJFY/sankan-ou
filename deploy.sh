@@ -17,7 +17,7 @@ WEB_APP_NAME="sankanou-web"
 # シークレット生成 (環境変数で上書き可能)
 DB_ADMIN_PASSWORD="${DB_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 32)}"
-ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:?Error: ANTHROPIC_API_KEY must be set}"
+OPENAI_RESOURCE_NAME="sankanou-openai"
 
 echo "============================================"
 echo "GRC Triple Crown - Azure Deployment"
@@ -142,13 +142,15 @@ az containerapp create \
     --memory 1.0Gi \
     --env-vars \
         "DATABASE_URL=secretref:database-url" \
-        "ANTHROPIC_API_KEY=secretref:anthropic-api-key" \
+        "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
+        "AZURE_OPENAI_API_KEY=secretref:azure-openai-key" \
         "JWT_SECRET=secretref:jwt-secret" \
         "API_RELOAD=false" \
         "DEBUG=false" \
     --secrets \
         "database-url=$DATABASE_URL" \
-        "anthropic-api-key=$ANTHROPIC_API_KEY" \
+        "azure-openai-endpoint=https://${OPENAI_RESOURCE_NAME}.openai.azure.com/" \
+        "azure-openai-key=$(az cognitiveservices account keys list --name $OPENAI_RESOURCE_NAME --resource-group $RESOURCE_GROUP --query key1 -o tsv)" \
         "jwt-secret=$JWT_SECRET" \
     --output none
 
@@ -225,8 +227,8 @@ echo ""
 echo "  API:  $API_URL"
 echo "  Web:  $WEB_URL"
 echo ""
-echo "  DB Password:  $DB_ADMIN_PASSWORD"
-echo "  JWT Secret:   $JWT_SECRET"
+echo "  DB Password:  (stored as secret)"
+echo "  JWT Secret:   (stored as secret)"
 echo ""
 echo "Next steps:"
 echo "  1. Seed DB:"

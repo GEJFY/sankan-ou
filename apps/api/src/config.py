@@ -24,8 +24,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
-    # Anthropic
-    anthropic_api_key: str = ""
+    # Azure OpenAI
+    azure_openai_endpoint: str = ""
+    azure_openai_api_key: str = ""
+    azure_openai_api_version: str = "2024-12-01-preview"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3001"]

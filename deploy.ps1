@@ -27,8 +27,7 @@ $CONTAINER_ENV_NAME = "sankanou-env"
 $API_APP_NAME = "sankanou-api"
 $WEB_APP_NAME = "sankanou-web"
 $JWT_SECRET = if ($env:JWT_SECRET) { $env:JWT_SECRET } else { [guid]::NewGuid().ToString() + [guid]::NewGuid().ToString() }
-if (-not $env:ANTHROPIC_API_KEY) { Write-Host "WARNING: ANTHROPIC_API_KEY not set. Set via: `$env:ANTHROPIC_API_KEY='sk-ant-...'" -ForegroundColor Yellow }
-$ANTHROPIC_API_KEY = if ($env:ANTHROPIC_API_KEY) { $env:ANTHROPIC_API_KEY } else { "placeholder" }
+$OPENAI_RESOURCE_NAME = "sankanou-openai"
 
 function Log($msg) {
     $ts = Get-Date -Format "HH:mm:ss"
@@ -166,8 +165,8 @@ if ($existingApi) {
         --max-replicas 1 `
         --cpu 0.5 `
         --memory 1.0Gi `
-        --env-vars "DATABASE_URL=secretref:database-url" "ANTHROPIC_API_KEY=secretref:anthropic-key" "JWT_SECRET=secretref:jwt-secret" "API_RELOAD=false" "DEBUG=false" `
-        --secrets "database-url=$DATABASE_URL" "anthropic-key=$ANTHROPIC_API_KEY" "jwt-secret=$JWT_SECRET" `
+        --env-vars "DATABASE_URL=secretref:database-url" "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" "AZURE_OPENAI_API_KEY=secretref:azure-openai-key" "JWT_SECRET=secretref:jwt-secret" "API_RELOAD=false" "DEBUG=false" `
+        --secrets "database-url=$DATABASE_URL" "azure-openai-endpoint=https://${OPENAI_RESOURCE_NAME}.openai.azure.com/" "azure-openai-key=$(az cognitiveservices account keys list --name $OPENAI_RESOURCE_NAME --resource-group $RESOURCE_GROUP --query key1 -o tsv)" "jwt-secret=$JWT_SECRET" `
         --output none
 }
 
@@ -240,11 +239,9 @@ Log "=========================================="
 
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "  1. Set real API key:" -ForegroundColor White
-Write-Host "     az containerapp secret set -g $RESOURCE_GROUP -n $API_APP_NAME --secrets anthropic-key=sk-ant-YOUR-REAL-KEY" -ForegroundColor Gray
-Write-Host "  2. Seed DB:" -ForegroundColor White
+Write-Host "  1. Seed DB:" -ForegroundColor White
 Write-Host "     az containerapp exec -g $RESOURCE_GROUP -n $API_APP_NAME --command 'python -m seed.seed_db'" -ForegroundColor Gray
-Write-Host "  3. Test:  curl $API_URL/api/v1/health" -ForegroundColor White
-Write-Host "  4. Open:  $WEB_URL" -ForegroundColor White
+Write-Host "  2. Test:  curl $API_URL/api/v1/health" -ForegroundColor White
+Write-Host "  3. Open:  $WEB_URL" -ForegroundColor White
 Write-Host ""
 Write-Host "Tear down: az group delete --name $RESOURCE_GROUP --yes --no-wait" -ForegroundColor DarkGray

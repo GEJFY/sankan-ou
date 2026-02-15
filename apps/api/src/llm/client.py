@@ -1,19 +1,23 @@
-"""Anthropic Claude API client wrapper"""
+"""Azure OpenAI API client wrapper"""
 
 from collections.abc import AsyncIterator
 
-import anthropic
+from openai import AsyncAzureOpenAI
 from loguru import logger
 
 from src.config import settings
 
-# Model routing
-MODEL_SONNET = "claude-sonnet-4-5-20250929"
-MODEL_HAIKU = "claude-haiku-4-5-20251001"
+# Model routing (Azure OpenAI deployment names)
+MODEL_SONNET = "gpt-4-1-mini"   # 解説生成・問題生成用
+MODEL_HAIKU = "gpt-4-1-nano"    # チャット・軽量処理用
 
 
-def get_client() -> anthropic.AsyncAnthropic:
-    return anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+def get_client() -> AsyncAzureOpenAI:
+    return AsyncAzureOpenAI(
+        azure_endpoint=settings.azure_openai_endpoint,
+        api_key=settings.azure_openai_api_key,
+        api_version=settings.azure_openai_api_version,
+    )
 
 
 async def generate(
@@ -25,17 +29,19 @@ async def generate(
 ) -> str:
     """Non-streaming completion"""
     client = get_client()
-    messages = [{"role": "user", "content": prompt}]
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
 
-    response = await client.messages.create(
+    response = await client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        system=system,
         messages=messages,
         temperature=temperature,
     )
 
-    return response.content[0].text
+    return response.choices[0].message.content or ""
 
 
 async def stream_generate(
@@ -47,14 +53,19 @@ async def stream_generate(
 ) -> AsyncIterator[str]:
     """Streaming completion (SSE用)"""
     client = get_client()
-    messages = [{"role": "user", "content": prompt}]
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
 
-    async with client.messages.stream(
+    stream = await client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        system=system,
         messages=messages,
         temperature=temperature,
-    ) as stream:
-        async for text in stream.text_stream:
-            yield text
+        stream=True,
+    )
+
+    async for chunk in stream:
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
