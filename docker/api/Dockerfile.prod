@@ -1,0 +1,50 @@
+# ============================================
+# Stage 1: Builder - install dependencies
+# ============================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY apps/api/pyproject.toml .
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir .
+
+COPY apps/api/ .
+RUN pip install --no-cache-dir .
+
+# ============================================
+# Stage 2: Runtime - minimal image
+# ============================================
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
+
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY apps/api/src/ ./src/
+COPY apps/api/alembic/ ./alembic/
+COPY apps/api/alembic.ini ./alembic.ini
+COPY apps/api/seed/ ./seed/
+
+COPY docker/api/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+CMD ["./start.sh"]

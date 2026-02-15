@@ -1,0 +1,41 @@
+# ============================================
+# Stage 1: Dependencies
+# ============================================
+FROM node:20-slim AS deps
+WORKDIR /app
+COPY apps/web/package.json apps/web/package-lock.json* ./
+RUN npm ci --omit=dev
+
+# ============================================
+# Stage 2: Build
+# ============================================
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY apps/web/package.json apps/web/package-lock.json* ./
+RUN npm ci
+COPY apps/web/ .
+
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV PATH="/app/node_modules/.bin:$PATH"
+
+RUN chmod -R +x node_modules/.bin/ && node node_modules/next/dist/bin/next build
+
+# ============================================
+# Stage 3: Runtime
+# ============================================
+FROM node:20-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 3000
+ENV HOSTNAME="0.0.0.0"
+CMD ["node", "server.js"]
