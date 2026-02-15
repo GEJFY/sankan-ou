@@ -17,7 +17,8 @@ WEB_APP_NAME="sankanou-web"
 # シークレット生成 (環境変数で上書き可能)
 DB_ADMIN_PASSWORD="${DB_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 32)}"
-OPENAI_RESOURCE_NAME="sankanou-openai"
+AI_RESOURCE_NAME="sankanou-ai"
+AI_RESOURCE_LOCATION="eastus2"  # AIServicesはEast US 2で利用可能 (Claude対応リージョン)
 
 echo "============================================"
 echo "GRC Triple Crown - Azure Deployment"
@@ -97,10 +98,53 @@ DATABASE_URL="postgresql+asyncpg://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@${DB_HO
 echo "   Database: $DB_HOST"
 
 # ============================================
-# 4. Build API Image (in ACR)
+# 4. Azure AI Foundry (AIServices) リソース
 # ============================================
 echo ""
-echo ">>> Step 4: Building API image..."
+echo ">>> Step 4: Creating AI Services resource..."
+existing_ai=$(az cognitiveservices account show --resource-group "$RESOURCE_GROUP" --name "$AI_RESOURCE_NAME" --query name -o tsv 2>/dev/null || true)
+if [ -n "$existing_ai" ]; then
+    echo "   AI Services resource already exists."
+else
+    az cognitiveservices account create \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$AI_RESOURCE_NAME" \
+        --kind AIServices \
+        --sku S0 \
+        --location "$AI_RESOURCE_LOCATION" \
+        --custom-domain "$AI_RESOURCE_NAME" \
+        --output none
+
+    echo "   Deploying GPT-4.1-mini..."
+    az cognitiveservices account deployment create \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$AI_RESOURCE_NAME" \
+        --deployment-name "gpt-4-1-mini" \
+        --model-name "gpt-4-1-mini" \
+        --model-version "2025-04-14" \
+        --model-format OpenAI \
+        --sku-name "GlobalStandard" \
+        --sku-capacity 10 \
+        --output none
+
+    echo "   Deploying GPT-4.1-nano..."
+    az cognitiveservices account deployment create \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$AI_RESOURCE_NAME" \
+        --deployment-name "gpt-4-1-nano" \
+        --model-name "gpt-4-1-nano" \
+        --model-version "2025-04-14" \
+        --model-format OpenAI \
+        --sku-name "GlobalStandard" \
+        --sku-capacity 10 \
+        --output none
+fi
+
+# ============================================
+# 5. Build API Image (in ACR)
+# ============================================
+echo ""
+echo ">>> Step 5: Building API image..."
 az acr build \
     --registry "$ACR_NAME" \
     --image api:latest \
@@ -111,10 +155,10 @@ az acr build \
 echo "   API image: $ACR_LOGIN_SERVER/api:latest"
 
 # ============================================
-# 5. Container Apps Environment
+# 6. Container Apps Environment
 # ============================================
 echo ""
-echo ">>> Step 5: Creating Container Apps environment..."
+echo ">>> Step 6: Creating Container Apps environment..."
 az containerapp env create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$CONTAINER_ENV_NAME" \
@@ -122,10 +166,11 @@ az containerapp env create \
     --output none
 
 # ============================================
-# 6. Deploy API Container App
+# 7. Deploy API Container App
 # ============================================
 echo ""
-echo ">>> Step 6: Deploying API..."
+echo ">>> Step 7: Deploying API..."
+AI_KEY=$(az cognitiveservices account keys list --name "$AI_RESOURCE_NAME" --resource-group "$RESOURCE_GROUP" --query key1 -o tsv)
 az containerapp create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$API_APP_NAME" \
@@ -142,15 +187,15 @@ az containerapp create \
     --memory 1.0Gi \
     --env-vars \
         "DATABASE_URL=secretref:database-url" \
-        "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
-        "AZURE_OPENAI_API_KEY=secretref:azure-openai-key" \
+        "AZURE_FOUNDRY_ENDPOINT=secretref:azure-foundry-endpoint" \
+        "AZURE_FOUNDRY_API_KEY=secretref:azure-foundry-key" \
         "JWT_SECRET=secretref:jwt-secret" \
         "API_RELOAD=false" \
         "DEBUG=false" \
     --secrets \
         "database-url=$DATABASE_URL" \
-        "azure-openai-endpoint=https://${OPENAI_RESOURCE_NAME}.openai.azure.com/" \
-        "azure-openai-key=$(az cognitiveservices account keys list --name $OPENAI_RESOURCE_NAME --resource-group $RESOURCE_GROUP --query key1 -o tsv)" \
+        "azure-foundry-endpoint=https://${AI_RESOURCE_NAME}.services.ai.azure.com/" \
+        "azure-foundry-key=$AI_KEY" \
         "jwt-secret=$JWT_SECRET" \
     --output none
 
@@ -162,10 +207,10 @@ API_URL="https://${API_FQDN}"
 echo "   API: $API_URL"
 
 # ============================================
-# 7. Build Web Image (with API URL baked in)
+# 8. Build Web Image (with API URL baked in)
 # ============================================
 echo ""
-echo ">>> Step 7: Building Web image..."
+echo ">>> Step 8: Building Web image..."
 az acr build \
     --registry "$ACR_NAME" \
     --image web:latest \
@@ -177,10 +222,10 @@ az acr build \
 echo "   Web image: $ACR_LOGIN_SERVER/web:latest"
 
 # ============================================
-# 8. Deploy Web Container App
+# 9. Deploy Web Container App
 # ============================================
 echo ""
-echo ">>> Step 8: Deploying Web..."
+echo ">>> Step 9: Deploying Web..."
 az containerapp create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$WEB_APP_NAME" \
@@ -205,10 +250,10 @@ WEB_URL="https://${WEB_FQDN}"
 echo "   Web: $WEB_URL"
 
 # ============================================
-# 9. Update API CORS
+# 10. Update API CORS
 # ============================================
 echo ""
-echo ">>> Step 9: Updating CORS..."
+echo ">>> Step 10: Updating CORS..."
 az containerapp update \
     --resource-group "$RESOURCE_GROUP" \
     --name "$API_APP_NAME" \

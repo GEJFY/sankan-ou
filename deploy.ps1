@@ -27,7 +27,8 @@ $CONTAINER_ENV_NAME = "sankanou-env"
 $API_APP_NAME = "sankanou-api"
 $WEB_APP_NAME = "sankanou-web"
 $JWT_SECRET = if ($env:JWT_SECRET) { $env:JWT_SECRET } else { [guid]::NewGuid().ToString() + [guid]::NewGuid().ToString() }
-$OPENAI_RESOURCE_NAME = "sankanou-openai"
+$AI_RESOURCE_NAME = "sankanou-ai"
+$AI_RESOURCE_LOCATION = "eastus2"  # AIServicesはEast US 2で利用可能 (Claude対応リージョン)
 
 function Log($msg) {
     $ts = Get-Date -Format "HH:mm:ss"
@@ -99,9 +100,54 @@ $DB_HOST = "${DB_SERVER_NAME}.postgres.database.azure.com"
 $DATABASE_URL = "postgresql+asyncpg://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?ssl=require"
 
 # ============================================
-# 3. Check/Build API Image
+# 3. Azure AI Foundry (AIServices) リソース
 # ============================================
-Log "Step 3: Checking API image in ACR..."
+Log "Step 3: Creating AI Services resource..."
+$existingAI = az cognitiveservices account show --resource-group $RESOURCE_GROUP --name $AI_RESOURCE_NAME --query name -o tsv 2>$null
+if ($existingAI) {
+    Log "  AI Services resource already exists."
+} else {
+    az cognitiveservices account create `
+        --resource-group $RESOURCE_GROUP `
+        --name $AI_RESOURCE_NAME `
+        --kind AIServices `
+        --sku S0 `
+        --location $AI_RESOURCE_LOCATION `
+        --custom-domain $AI_RESOURCE_NAME `
+        --output none
+    Log "  AI Services resource created."
+
+    Log "  Deploying GPT-4.1-mini..."
+    az cognitiveservices account deployment create `
+        --resource-group $RESOURCE_GROUP `
+        --name $AI_RESOURCE_NAME `
+        --deployment-name "gpt-4-1-mini" `
+        --model-name "gpt-4-1-mini" `
+        --model-version "2025-04-14" `
+        --model-format OpenAI `
+        --sku-name "GlobalStandard" `
+        --sku-capacity 10 `
+        --output none
+    Log "  GPT-4.1-mini deployed."
+
+    Log "  Deploying GPT-4.1-nano..."
+    az cognitiveservices account deployment create `
+        --resource-group $RESOURCE_GROUP `
+        --name $AI_RESOURCE_NAME `
+        --deployment-name "gpt-4-1-nano" `
+        --model-name "gpt-4-1-nano" `
+        --model-version "2025-04-14" `
+        --model-format OpenAI `
+        --sku-name "GlobalStandard" `
+        --sku-capacity 10 `
+        --output none
+    Log "  GPT-4.1-nano deployed."
+}
+
+# ============================================
+# 4. Check/Build API Image
+# ============================================
+Log "Step 4: Checking API image in ACR..."
 $repos = az acr repository list --name $ACR_NAME -o tsv 2>$null
 if ($repos -match "api") {
     Log "  API image already exists. Skipping build."
@@ -114,9 +160,9 @@ if ($repos -match "api") {
 }
 
 # ============================================
-# 4. Container Apps Environment
+# 5. Container Apps Environment
 # ============================================
-Log "Step 4: Creating Container Apps environment..."
+Log "Step 5: Creating Container Apps environment..."
 $existing = az containerapp env show --resource-group $RESOURCE_GROUP --name $CONTAINER_ENV_NAME --query name -o tsv 2>$null
 if ($existing) {
     Log "  Environment already exists."
@@ -130,18 +176,18 @@ if ($existing) {
 }
 
 # ============================================
-# 5. Get ACR credentials
+# 6. Get ACR credentials
 # ============================================
-Log "Step 5: Getting ACR credentials..."
+Log "Step 6: Getting ACR credentials..."
 $ACR_LOGIN_SERVER = az acr show --name $ACR_NAME --query loginServer -o tsv
 $ACR_USERNAME = az acr credential show --name $ACR_NAME --query username -o tsv
 $ACR_PASSWORD = az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv
 Log "  ACR: $ACR_LOGIN_SERVER"
 
 # ============================================
-# 6. Deploy API Container App
+# 7. Deploy API Container App
 # ============================================
-Log "Step 6: Deploying API..."
+Log "Step 7: Deploying API..."
 $existingApi = az containerapp show --resource-group $RESOURCE_GROUP --name $API_APP_NAME --query name -o tsv 2>$null
 if ($existingApi) {
     Log "  API app exists. Updating..."
@@ -151,6 +197,7 @@ if ($existingApi) {
         --image "$ACR_LOGIN_SERVER/api:latest" `
         --output none
 } else {
+    $AI_KEY = az cognitiveservices account keys list --name $AI_RESOURCE_NAME --resource-group $RESOURCE_GROUP --query key1 -o tsv
     az containerapp create `
         --resource-group $RESOURCE_GROUP `
         --name $API_APP_NAME `
@@ -165,8 +212,8 @@ if ($existingApi) {
         --max-replicas 1 `
         --cpu 0.5 `
         --memory 1.0Gi `
-        --env-vars "DATABASE_URL=secretref:database-url" "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" "AZURE_OPENAI_API_KEY=secretref:azure-openai-key" "JWT_SECRET=secretref:jwt-secret" "API_RELOAD=false" "DEBUG=false" `
-        --secrets "database-url=$DATABASE_URL" "azure-openai-endpoint=https://${OPENAI_RESOURCE_NAME}.openai.azure.com/" "azure-openai-key=$(az cognitiveservices account keys list --name $OPENAI_RESOURCE_NAME --resource-group $RESOURCE_GROUP --query key1 -o tsv)" "jwt-secret=$JWT_SECRET" `
+        --env-vars "DATABASE_URL=secretref:database-url" "AZURE_FOUNDRY_ENDPOINT=secretref:azure-foundry-endpoint" "AZURE_FOUNDRY_API_KEY=secretref:azure-foundry-key" "JWT_SECRET=secretref:jwt-secret" "API_RELOAD=false" "DEBUG=false" `
+        --secrets "database-url=$DATABASE_URL" "azure-foundry-endpoint=https://${AI_RESOURCE_NAME}.services.ai.azure.com/" "azure-foundry-key=$AI_KEY" "jwt-secret=$JWT_SECRET" `
         --output none
 }
 
@@ -175,18 +222,18 @@ $API_URL = "https://${API_FQDN}"
 Log "  API: $API_URL"
 
 # ============================================
-# 7. Build Web Image (with API URL baked in)
+# 8. Build Web Image (with API URL baked in)
 # ============================================
-Log "Step 7: Building Web image (takes ~5 min)..."
+Log "Step 8: Building Web image (takes ~5 min)..."
 Push-Location $PSScriptRoot
 az acr build --registry $ACR_NAME --image web:latest --file docker/web/Dockerfile.prod --build-arg "NEXT_PUBLIC_API_URL=$API_URL" . --no-logs
 Pop-Location
 Log "  Web image built."
 
 # ============================================
-# 8. Deploy Web Container App
+# 9. Deploy Web Container App
 # ============================================
-Log "Step 8: Deploying Web..."
+Log "Step 9: Deploying Web..."
 $existingWeb = az containerapp show --resource-group $RESOURCE_GROUP --name $WEB_APP_NAME --query name -o tsv 2>$null
 if ($existingWeb) {
     Log "  Web app exists. Updating..."
@@ -218,9 +265,9 @@ $WEB_URL = "https://${WEB_FQDN}"
 Log "  Web: $WEB_URL"
 
 # ============================================
-# 9. Update API CORS
+# 10. Update API CORS
 # ============================================
-Log "Step 9: Updating CORS..."
+Log "Step 10: Updating CORS..."
 az containerapp update `
     --resource-group $RESOURCE_GROUP `
     --name $API_APP_NAME `
