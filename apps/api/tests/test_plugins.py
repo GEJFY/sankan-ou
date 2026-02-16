@@ -8,13 +8,16 @@ from src.plugins.registry import get_all_plugins, get_all_synergy_areas, get_plu
 
 @pytest.mark.unit
 def test_all_plugins_registered():
-    """4資格プラグインが全て登録されている"""
+    """7資格プラグインが全て登録されている"""
     plugins = get_all_plugins()
     assert "CIA" in plugins
     assert "CISA" in plugins
     assert "CFE" in plugins
     assert "USCPA" in plugins
-    assert len(plugins) == 4
+    assert "BOKI1" in plugins
+    assert "FP" in plugins
+    assert "RISS" in plugins
+    assert len(plugins) == 7
 
 
 @pytest.mark.unit
@@ -86,6 +89,53 @@ def test_uscpa_plugin_details():
     assert any("FAR" in c for c in codes)
     assert any("REG" in c for c in codes)
     assert any("BAR" in c for c in codes)
+
+
+@pytest.mark.unit
+def test_boki1_plugin_details():
+    """簿記1級プラグインの具体的な設定"""
+    boki = get_plugin("BOKI1")
+    assert boki.course_name == "日商簿記検定1級"
+    assert boki.color == "#d97706"
+    assert boki.exam_config.total_questions == 100
+    assert boki.exam_config.passing_score == 0.70
+    assert len(boki.exam_config.sections) == 4
+
+    syllabus = boki.get_syllabus()
+    names = [t.name for t in syllabus]
+    assert "商業簿記" in names
+    assert "会計学" in names
+    assert "工業簿記" in names
+    assert "原価計算" in names
+
+
+@pytest.mark.unit
+def test_fp_plugin_details():
+    """FPプラグインの具体的な設定"""
+    fp = get_plugin("FP")
+    assert fp.course_name == "FP技能士（ファイナンシャル・プランニング）"
+    assert fp.color == "#2563eb"
+    assert fp.exam_config.total_questions == 70
+    assert fp.exam_config.passing_score == 0.60
+    assert len(fp.exam_config.sections) == 2
+
+    syllabus = fp.get_syllabus()
+    assert len(syllabus) == 6  # 6分野
+
+
+@pytest.mark.unit
+def test_riss_plugin_details():
+    """情報処理安全確保支援士プラグインの具体的な設定"""
+    riss = get_plugin("RISS")
+    assert riss.course_name == "情報処理安全確保支援士"
+    assert riss.color == "#dc2626"
+    assert riss.exam_config.total_questions == 95
+    assert riss.exam_config.passing_score == 0.60
+    assert len(riss.exam_config.sections) == 4
+
+    syllabus = riss.get_syllabus()
+    names = [t.name for t in syllabus]
+    assert any("セキュリティ" in n for n in names)
 
 
 @pytest.mark.unit
