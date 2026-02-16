@@ -1,7 +1,5 @@
 """Mock Exam endpoints - 模擬試験"""
 
-import uuid
-
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
@@ -9,8 +7,6 @@ from src.deps import DbSession
 from src.plugins.registry import get_plugin
 
 router = APIRouter(prefix="/mock-exam", tags=["mock-exam"])
-
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 class StartMockExamRequest(BaseModel):

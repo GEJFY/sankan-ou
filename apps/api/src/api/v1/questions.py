@@ -1,12 +1,11 @@
 """Question generation and answer endpoints"""
 
 import json
-import uuid
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.llm.client import MODEL_SONNET, generate
 from src.llm.prompts.question_gen import build_question_gen_prompt
 from src.models.course import Course, Topic
@@ -22,11 +21,9 @@ from src.schemas.question import (
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
-
 
 @router.post("/generate", response_model=GenerateQuestionsResponse)
-async def generate_questions(body: GenerateQuestionsRequest, db: DbSession):
+async def generate_questions(body: GenerateQuestionsRequest, db: DbSession, current_user: CurrentUser):
     """LLMで練習問題を自動生成"""
     # Topic + Course情報を取得
     topic = await db.get(Topic, body.topic_id)
@@ -98,7 +95,7 @@ async def generate_questions(body: GenerateQuestionsRequest, db: DbSession):
 
 
 @router.post("/answer", response_model=AnswerResponse)
-async def answer_question(body: AnswerRequest, db: DbSession):
+async def answer_question(body: AnswerRequest, db: DbSession, current_user: CurrentUser):
     """回答送信"""
     question = await db.get(Question, body.question_id)
     if not question:
@@ -113,7 +110,7 @@ async def answer_question(body: AnswerRequest, db: DbSession):
 
     # 回答記録
     attempt = QuestionAttempt(
-        user_id=DEMO_USER_ID,
+        user_id=current_user.id,
         question_id=question.id,
         selected_index=body.selected_index,
         is_correct=is_correct,

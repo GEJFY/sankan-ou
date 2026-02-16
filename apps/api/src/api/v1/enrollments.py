@@ -2,19 +2,16 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.database import get_db
+from src.deps import CurrentUser, DbSession
 from src.models.enrollment import UserEnrollment
 from src.models.course import Course
 
 router = APIRouter(prefix="/enrollments", tags=["enrollments"])
-
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 class EnrollRequest(BaseModel):
@@ -27,11 +24,11 @@ class UpdateRetentionRequest(BaseModel):
 
 
 @router.get("")
-async def get_enrollments(db: AsyncSession = Depends(get_db)):
+async def get_enrollments(db: DbSession, current_user: CurrentUser):
     """ユーザーの登録コース一覧"""
     result = await db.execute(
         select(UserEnrollment)
-        .where(UserEnrollment.user_id == DEMO_USER_ID)
+        .where(UserEnrollment.user_id == current_user.id)
         .options(selectinload(UserEnrollment.course))
     )
     enrollments = result.scalars().all()
@@ -55,10 +52,7 @@ async def get_enrollments(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("")
-async def enroll_course(
-    req: EnrollRequest,
-    db: AsyncSession = Depends(get_db),
-):
+async def enroll_course(req: EnrollRequest, db: DbSession, current_user: CurrentUser):
     """コースに登録"""
     course_id = uuid.UUID(req.course_id)
 
@@ -71,7 +65,7 @@ async def enroll_course(
     # 重複チェック
     result = await db.execute(
         select(UserEnrollment).where(
-            UserEnrollment.user_id == DEMO_USER_ID,
+            UserEnrollment.user_id == current_user.id,
             UserEnrollment.course_id == course_id,
         )
     )
@@ -84,7 +78,7 @@ async def enroll_course(
         raise HTTPException(status_code=409, detail="既に登録済みです")
 
     enrollment = UserEnrollment(
-        user_id=DEMO_USER_ID,
+        user_id=current_user.id,
         course_id=course_id,
         desired_retention=req.desired_retention,
     )
@@ -102,13 +96,14 @@ async def enroll_course(
 async def update_retention(
     enrollment_id: str,
     req: UpdateRetentionRequest,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    current_user: CurrentUser,
 ):
     """目標記憶率の更新"""
     result = await db.execute(
         select(UserEnrollment).where(
             UserEnrollment.id == uuid.UUID(enrollment_id),
-            UserEnrollment.user_id == DEMO_USER_ID,
+            UserEnrollment.user_id == current_user.id,
         )
     )
     enrollment = result.scalar_one_or_none()
@@ -130,13 +125,14 @@ async def update_retention(
 @router.delete("/{enrollment_id}")
 async def unenroll_course(
     enrollment_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    current_user: CurrentUser,
 ):
     """コース登録を無効化（ソフトデリート）"""
     result = await db.execute(
         select(UserEnrollment).where(
             UserEnrollment.id == uuid.UUID(enrollment_id),
-            UserEnrollment.user_id == DEMO_USER_ID,
+            UserEnrollment.user_id == current_user.id,
         )
     )
     enrollment = result.scalar_one_or_none()

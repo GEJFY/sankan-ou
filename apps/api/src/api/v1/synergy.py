@@ -1,6 +1,5 @@
 """Synergy endpoints - 資格間シナジー情報"""
 
-import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
@@ -12,8 +11,6 @@ from src.models.course import Course, Topic
 from src.plugins.registry import get_all_plugins, get_all_synergy_areas, get_plugin
 
 router = APIRouter(prefix="/synergy", tags=["synergy"])
-
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 @router.get("/areas")

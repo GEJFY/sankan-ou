@@ -53,7 +53,8 @@ alembic revision --autogenerate -m "description"
 ```
 
 ## Key Patterns
-- **Demo User ID**: `00000000-0000-0000-0000-000000000001` (MVP用、Phase 3でJWT認証に差替)
+- **認証**: JWT (HS256) — `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- **Demo User**: `demo@sankanou.dev` (seed用、テスト時に使用可能)
 - **FSRS Rating**: 1=Again, 2=Hard, 3=Good, 4=Easy
 - **Course Colors**: CIA=#e94560, CISA=#0891b2, CFE=#7c3aed
 - **API Prefix**: `/api/v1/`

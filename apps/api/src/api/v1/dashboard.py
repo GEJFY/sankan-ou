@@ -1,12 +1,11 @@
 """Dashboard endpoints"""
 
-import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from sqlalchemy import func, select
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview, ReviewLog
 from src.models.course import Course, Topic
 from src.schemas.dashboard import (
@@ -20,12 +19,9 @@ from src.schemas.dashboard import (
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
-# MVP: 固定ユーザー (認証実装後にCurrentUserに差替)
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
-
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
-async def get_summary(db: DbSession) -> DashboardSummaryResponse:
+async def get_summary(db: DbSession, current_user: CurrentUser) -> DashboardSummaryResponse:
     """3資格別進捗サマリー"""
     now = datetime.now(timezone.utc)
     courses_result = await db.execute(
@@ -48,7 +44,7 @@ async def get_summary(db: DbSession) -> DashboardSummaryResponse:
                 select(func.count(CardReview.id))
                 .join(Card, CardReview.card_id == Card.id)
                 .where(Card.course_id == course.id)
-                .where(CardReview.user_id == DEMO_USER_ID)
+                .where(CardReview.user_id == current_user.id)
                 .where(CardReview.due <= now)
             )
         ).scalar() or 0
@@ -59,7 +55,7 @@ async def get_summary(db: DbSession) -> DashboardSummaryResponse:
                 select(func.count(CardReview.id))
                 .join(Card, CardReview.card_id == Card.id)
                 .where(Card.course_id == course.id)
-                .where(CardReview.user_id == DEMO_USER_ID)
+                .where(CardReview.user_id == current_user.id)
                 .where(CardReview.state == 2)
                 .where(CardReview.stability > 21)
             )
@@ -86,7 +82,7 @@ async def get_summary(db: DbSession) -> DashboardSummaryResponse:
         await db.execute(
             select(func.count(ReviewLog.id))
             .join(CardReview, ReviewLog.card_review_id == CardReview.id)
-            .where(CardReview.user_id == DEMO_USER_ID)
+            .where(CardReview.user_id == current_user.id)
             .where(ReviewLog.reviewed_at >= today_start)
         )
     ).scalar() or 0
@@ -99,7 +95,7 @@ async def get_summary(db: DbSession) -> DashboardSummaryResponse:
 
 
 @router.get("/weak-topics", response_model=WeakTopicsResponse)
-async def get_weak_topics(db: DbSession) -> WeakTopicsResponse:
+async def get_weak_topics(db: DbSession, current_user: CurrentUser) -> WeakTopicsResponse:
     """弱点トピックTOP5"""
     stmt = (
         select(
@@ -113,7 +109,7 @@ async def get_weak_topics(db: DbSession) -> WeakTopicsResponse:
         .join(Card, CardReview.card_id == Card.id)
         .join(Topic, Card.topic_id == Topic.id)
         .join(Course, Card.course_id == Course.id)
-        .where(CardReview.user_id == DEMO_USER_ID)
+        .where(CardReview.user_id == current_user.id)
         .group_by(Topic.id, Topic.name, Course.code, Course.color)
     )
 
@@ -142,7 +138,7 @@ async def get_weak_topics(db: DbSession) -> WeakTopicsResponse:
 
 
 @router.get("/history", response_model=HistoryResponse)
-async def get_history(db: DbSession) -> HistoryResponse:
+async def get_history(db: DbSession, current_user: CurrentUser) -> HistoryResponse:
     """直近14日の学習履歴"""
     stmt = (
         select(
@@ -150,7 +146,7 @@ async def get_history(db: DbSession) -> HistoryResponse:
             func.count(ReviewLog.id).label("cards_reviewed"),
         )
         .join(CardReview, ReviewLog.card_review_id == CardReview.id)
-        .where(CardReview.user_id == DEMO_USER_ID)
+        .where(CardReview.user_id == current_user.id)
         .group_by(func.date(ReviewLog.reviewed_at))
         .order_by(func.date(ReviewLog.reviewed_at).desc())
         .limit(14)

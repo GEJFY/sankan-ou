@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.models.user import User
 from src.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
 from src.services.auth_service import (
@@ -42,3 +42,9 @@ async def login(body: LoginRequest, db: DbSession) -> TokenResponse:
 
     token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
+
+
+@router.get("/me", response_model=UserOut)
+async def get_me(current_user: CurrentUser) -> UserOut:
+    """現在のユーザー情報取得（トークン検証）"""
+    return UserOut.model_validate(current_user)

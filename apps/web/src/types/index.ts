@@ -1,3 +1,17 @@
+/** Authenticated user */
+export interface User {
+  id: string;
+  email: string;
+  display_name: string;
+  role: string;
+}
+
+/** Auth token response */
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
 /** Course (CIA / CISA / CFE) */
 export interface Course {
   id: string;
