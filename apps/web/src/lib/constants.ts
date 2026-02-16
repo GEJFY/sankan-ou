@@ -4,6 +4,9 @@ export const COURSE_COLORS: Record<string, string> = {
   CISA: "#0891b2",
   CFE: "#7c3aed",
   USCPA: "#059669",
+  BOKI1: "#d97706",
+  FP: "#2563eb",
+  RISS: "#dc2626",
 };
 
 /** API base URL */
