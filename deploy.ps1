@@ -117,31 +117,44 @@ if ($existingAI) {
         --output none
     Log "  AI Services resource created."
 
-    Log "  Deploying GPT-4.1-mini..."
+    Log "  Deploying GPT-5-mini..."
     az cognitiveservices account deployment create `
         --resource-group $RESOURCE_GROUP `
         --name $AI_RESOURCE_NAME `
-        --deployment-name "gpt-4-1-mini" `
-        --model-name "gpt-4-1-mini" `
-        --model-version "2025-04-14" `
+        --deployment-name "gpt-5-mini" `
+        --model-name "gpt-5-mini" `
+        --model-version "2025-08-07" `
         --model-format OpenAI `
         --sku-name "GlobalStandard" `
         --sku-capacity 10 `
         --output none
-    Log "  GPT-4.1-mini deployed."
+    Log "  GPT-5-mini deployed."
 
-    Log "  Deploying GPT-4.1-nano..."
+    Log "  Deploying GPT-5-nano..."
     az cognitiveservices account deployment create `
         --resource-group $RESOURCE_GROUP `
         --name $AI_RESOURCE_NAME `
-        --deployment-name "gpt-4-1-nano" `
-        --model-name "gpt-4-1-nano" `
-        --model-version "2025-04-14" `
+        --deployment-name "gpt-5-nano" `
+        --model-name "gpt-5-nano" `
+        --model-version "2025-08-07" `
         --model-format OpenAI `
         --sku-name "GlobalStandard" `
         --sku-capacity 10 `
         --output none
-    Log "  GPT-4.1-nano deployed."
+    Log "  GPT-5-nano deployed."
+
+    Log "  Deploying GPT-5.2-chat..."
+    az cognitiveservices account deployment create `
+        --resource-group $RESOURCE_GROUP `
+        --name $AI_RESOURCE_NAME `
+        --deployment-name "gpt-5.2-chat" `
+        --model-name "gpt-5.2-chat" `
+        --model-version "2025-12-11" `
+        --model-format OpenAI `
+        --sku-name "GlobalStandard" `
+        --sku-capacity 10 `
+        --output none
+    Log "  GPT-5.2-chat deployed."
 }
 
 # ============================================
@@ -213,7 +226,7 @@ if ($existingApi) {
         --cpu 0.5 `
         --memory 1.0Gi `
         --env-vars "DATABASE_URL=secretref:database-url" "AZURE_FOUNDRY_ENDPOINT=secretref:azure-foundry-endpoint" "AZURE_FOUNDRY_API_KEY=secretref:azure-foundry-key" "JWT_SECRET=secretref:jwt-secret" "API_RELOAD=false" "DEBUG=false" `
-        --secrets "database-url=$DATABASE_URL" "azure-foundry-endpoint=https://${AI_RESOURCE_NAME}.services.ai.azure.com/" "azure-foundry-key=$AI_KEY" "jwt-secret=$JWT_SECRET" `
+        --secrets "database-url=$DATABASE_URL" "azure-foundry-endpoint=https://${AI_RESOURCE_NAME}.cognitiveservices.azure.com/" "azure-foundry-key=$AI_KEY" "jwt-secret=$JWT_SECRET" `
         --output none
 }
 

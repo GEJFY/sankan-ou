@@ -4,6 +4,7 @@ import json
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from loguru import logger
 
 from pydantic import BaseModel, Field
 
@@ -32,10 +33,13 @@ router = APIRouter(prefix="/ai-tutor", tags=["ai-tutor"])
 
 
 async def sse_wrapper(generator):
-    """SSE format wrapper"""
-    async for chunk in generator:
-        # SSE format: data: <text>\n\n
-        yield f"data: {json.dumps({'text': chunk}, ensure_ascii=False)}\n\n"
+    """SSE format wrapper with error handling"""
+    try:
+        async for chunk in generator:
+            yield f"data: {json.dumps({'text': chunk}, ensure_ascii=False)}\n\n"
+    except Exception as e:
+        logger.error(f"SSE stream error: {e}")
+        yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
 
 
