@@ -126,11 +126,15 @@ async def generate(
     prompt: str,
     system: str = "",
     model: str | None = None,
-    max_tokens: int = 2048,
+    max_tokens: int = 16384,
     temperature: float = 0.7,
 ) -> str:
-    """Non-streaming completion (プロバイダー自動判定)"""
+    """Non-streaming completion (プロバイダー自動判定)
+
+    Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
+    """
     model = model or MODEL_CHAT
+    logger.info(f"generate: model={model}, max_tokens={max_tokens}")
 
     if _is_claude(model):
         return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
@@ -146,11 +150,15 @@ async def stream_generate(
     prompt: str,
     system: str = "",
     model: str | None = None,
-    max_tokens: int = 2048,
+    max_tokens: int = 16384,
     temperature: float = 0.7,
 ) -> AsyncIterator[str]:
-    """Streaming completion - SSE用 (プロバイダー自動判定)"""
+    """Streaming completion - SSE用 (プロバイダー自動判定)
+
+    Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
+    """
     model = model or MODEL_CHAT
+    logger.info(f"stream_generate: model={model}, max_tokens={max_tokens}")
 
     if _is_claude(model):
         async for text in _anthropic_stream(system, prompt, model, max_tokens, temperature):
