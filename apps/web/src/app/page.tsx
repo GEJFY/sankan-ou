@@ -67,7 +67,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold">ダッシュボード</h1>
-          <p className="text-gray-500 mt-1">GRC Triple Crown - 3資格同時合格への進捗</p>
+          <p className="text-gray-500 mt-1">GRC Triple Crown - 資格同時合格への進捗</p>
         </div>
 
         {error && (
@@ -76,8 +76,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 3資格プログレスリング */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 資格プログレスリング */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {dashboard?.courses.map((course) => (
             <ProgressRing
               key={course.course_id}
@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
         {/* 合格確率予測 */}
         {dashboard && dashboard.courses.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {dashboard.courses.map((course) => (
               <PassProbability
                 key={course.course_id}

@@ -1,9 +1,10 @@
 /** 資格別カラー定義 */
-export const COURSE_COLORS = {
+export const COURSE_COLORS: Record<string, string> = {
   CIA: "#e94560",
   CISA: "#0891b2",
   CFE: "#7c3aed",
-} as const;
+  USCPA: "#059669",
+};
 
 /** API base URL */
 export const API_BASE_URL =

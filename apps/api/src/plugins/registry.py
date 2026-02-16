@@ -4,6 +4,7 @@ from src.plugins.base import CoursePlugin, SynergyDef
 from src.plugins.cfe import CFEPlugin
 from src.plugins.cia import CIAPlugin
 from src.plugins.cisa import CISAPlugin
+from src.plugins.uscpa import USCPAPlugin
 
 # 全プラグインインスタンス
 _PLUGINS: dict[str, CoursePlugin] = {}
@@ -11,7 +12,7 @@ _PLUGINS: dict[str, CoursePlugin] = {}
 
 def _register_defaults() -> None:
     """デフォルトプラグイン登録"""
-    for plugin_cls in [CIAPlugin, CISAPlugin, CFEPlugin]:
+    for plugin_cls in [CIAPlugin, CISAPlugin, CFEPlugin, USCPAPlugin]:
         plugin = plugin_cls()
         _PLUGINS[plugin.course_code] = plugin
 

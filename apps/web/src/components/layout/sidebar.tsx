@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { COURSE_COLORS } from "@/lib/constants";
 
 const NAV_ITEMS = [
   { href: "/", label: "ダッシュボード", icon: "📊" },
@@ -46,6 +47,23 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {user?.role === "admin" && (
+          <>
+            <div className="my-2 border-t border-gray-800" />
+            <Link
+              href="/admin"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                pathname === "/admin"
+                  ? "bg-purple-600/20 text-purple-400"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+              }`}
+            >
+              <span>{"🛡️"}</span>
+              <span>管理画面</span>
+            </Link>
+          </>
+        )}
       </nav>
 
       <div className="mt-auto pt-4 border-t border-gray-800 space-y-3">
@@ -61,20 +79,16 @@ export default function Sidebar() {
           </div>
         )}
         <div className="flex gap-2">
-          <span
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: "#e94560" }}
-          />
-          <span
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: "#0891b2" }}
-          />
-          <span
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: "#7c3aed" }}
-          />
+          {Object.entries(COURSE_COLORS).map(([code, color]) => (
+            <span
+              key={code}
+              className="w-3 h-3 rounded-full"
+              title={code}
+              style={{ backgroundColor: color }}
+            />
+          ))}
         </div>
-        <p className="text-xs text-gray-600">v0.4.0</p>
+        <p className="text-xs text-gray-600">v0.5.0</p>
       </div>
     </aside>
   );

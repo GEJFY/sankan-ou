@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 
 export const metadata: Metadata = {
   title: "GRC Triple Crown - 三冠王",
-  description: "AI駆動型 CIA/CISA/CFE 学習プラットフォーム",
+  description: "AI駆動型 CIA/CISA/CFE/USCPA 学習プラットフォーム",
 };
 
 export default function RootLayout({
