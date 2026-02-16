@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from src.api.v1 import (
-    auth, cards, courses, dashboard, enrollments, gamification, health,
+    admin, auth, cards, courses, dashboard, enrollments, gamification, health,
     media, mock_exam, questions, sessions, synergy, tutor,
 )
 
@@ -22,3 +22,4 @@ api_router.include_router(mock_exam.router)
 api_router.include_router(media.router)
 api_router.include_router(gamification.router)
 api_router.include_router(enrollments.router)
+api_router.include_router(admin.router)

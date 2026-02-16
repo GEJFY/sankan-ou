@@ -127,9 +127,10 @@ async def get_synergy_study_cards(
 
 @router.get("/overview")
 async def get_synergy_overview():
-    """3資格シナジー概要 - 全体の重複状況"""
+    """全資格シナジー概要 - 全体の重複状況"""
     plugins = get_all_plugins()
     areas = get_all_synergy_areas()
+    num_courses = len(plugins)
 
     overview = {
         "courses": [
@@ -149,6 +150,6 @@ async def get_synergy_overview():
         "avg_overlap_pct": (
             sum(a["overlap_pct"] for a in areas) / len(areas) if areas else 0
         ),
-        "learning_efficiency": "3資格の約40%の知識が共通。効率的な同時学習が可能。",
+        "learning_efficiency": f"{num_courses}資格の共通知識を活用した効率的な同時学習が可能。",
     }
     return overview

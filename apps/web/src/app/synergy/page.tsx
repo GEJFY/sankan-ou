@@ -5,6 +5,7 @@ import AppLayout from "@/components/layout/app-layout";
 import Flashcard from "@/components/study/flashcard";
 import RatingButtons from "@/components/study/rating-buttons";
 import { apiFetch } from "@/lib/api-client";
+import { COURSE_COLORS } from "@/lib/constants";
 
 interface SynergyCard {
   id: string;
@@ -106,13 +107,13 @@ export default function SynergyPage() {
         <div>
           <h1 className="text-3xl font-bold">シナジー学習</h1>
           <p className="text-gray-500 mt-1">
-            3資格共通テーマで横断的に学習
+            資格共通テーマで横断的に学習
           </p>
         </div>
 
         {/* シナジー領域タグ */}
         <div className="flex flex-wrap gap-2">
-          {areas.slice(0, 6).map((area, i) => (
+          {areas.slice(0, 8).map((area, i) => (
             <div
               key={i}
               className="px-3 py-1.5 bg-gray-800 rounded-full text-xs flex items-center gap-2"
@@ -125,12 +126,7 @@ export default function SynergyPage() {
                     key={code}
                     className="w-1.5 h-1.5 rounded-full"
                     style={{
-                      backgroundColor:
-                        code === "CIA"
-                          ? "#e94560"
-                          : code === "CISA"
-                            ? "#0891b2"
-                            : "#7c3aed",
+                      backgroundColor: COURSE_COLORS[code] ?? "#666",
                     }}
                   />
                 ))}

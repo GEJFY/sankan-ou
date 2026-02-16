@@ -12,7 +12,7 @@ export interface TokenResponse {
   token_type: string;
 }
 
-/** Course (CIA / CISA / CFE) */
+/** Course (CIA / CISA / CFE / USCPA) */
 export interface Course {
   id: string;
   name: string;

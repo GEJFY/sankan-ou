@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     application = FastAPI(
         title="GRC Triple Crown API",
-        description="AI駆動型 CIA/CISA/CFE 学習プラットフォーム",
+        description="AI駆動型 CIA/CISA/CFE/USCPA 学習プラットフォーム",
         version="0.1.0",
         lifespan=lifespan,
         debug=settings.debug,
