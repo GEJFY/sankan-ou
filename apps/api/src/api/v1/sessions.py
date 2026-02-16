@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.services.session_service import (
     mastery_service,
     score_prediction_service,
@@ -13,8 +13,6 @@ from src.services.session_service import (
 )
 
 router = APIRouter(tags=["sessions"])
-
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 # --- Schemas ---
@@ -31,10 +29,10 @@ class EndSessionRequest(BaseModel):
 
 # --- Sessions ---
 @router.post("/sessions/start")
-async def start_session(body: StartSessionRequest, db: DbSession):
+async def start_session(body: StartSessionRequest, db: DbSession, current_user: CurrentUser):
     """学習セッション開始"""
     session = await session_service.start_session(
-        db, DEMO_USER_ID, body.course_id, body.session_type
+        db, current_user.id, body.course_id, body.session_type
     )
     return {
         "session_id": str(session.id),
@@ -44,7 +42,7 @@ async def start_session(body: StartSessionRequest, db: DbSession):
 
 
 @router.post("/sessions/end")
-async def end_session(body: EndSessionRequest, db: DbSession):
+async def end_session(body: EndSessionRequest, db: DbSession, current_user: CurrentUser):
     """学習セッション終了"""
     session = await session_service.end_session(
         db, body.session_id, body.cards_reviewed, body.cards_correct
@@ -65,9 +63,9 @@ async def end_session(body: EndSessionRequest, db: DbSession):
 
 
 @router.get("/sessions/recent")
-async def get_recent_sessions(db: DbSession, limit: int = 10):
+async def get_recent_sessions(db: DbSession, current_user: CurrentUser, limit: int = 10):
     """直近セッション一覧"""
-    sessions = await session_service.get_recent_sessions(db, DEMO_USER_ID, limit)
+    sessions = await session_service.get_recent_sessions(db, current_user.id, limit)
     return {
         "sessions": [
             {
@@ -86,37 +84,37 @@ async def get_recent_sessions(db: DbSession, limit: int = 10):
 
 
 @router.get("/sessions/today")
-async def get_today_stats(db: DbSession):
+async def get_today_stats(db: DbSession, current_user: CurrentUser):
     """今日の学習統計"""
-    stats = await session_service.get_today_stats(db, DEMO_USER_ID)
-    streak = await session_service.get_streak_days(db, DEMO_USER_ID)
+    stats = await session_service.get_today_stats(db, current_user.id)
+    streak = await session_service.get_streak_days(db, current_user.id)
     return {**stats, "streak_days": streak}
 
 
 # --- Score Prediction ---
 @router.get("/predictions/{course_id}")
-async def predict_score(course_id: uuid.UUID, db: DbSession):
+async def predict_score(course_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     """合格確率予測"""
     result = await score_prediction_service.predict_pass_probability(
-        db, DEMO_USER_ID, course_id
+        db, current_user.id, course_id
     )
     return result
 
 
 @router.get("/predictions/{course_id}/roi")
-async def get_study_roi(course_id: uuid.UUID, db: DbSession):
+async def get_study_roi(course_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     """学習ROI推定"""
     result = await score_prediction_service.get_study_roi(
-        db, DEMO_USER_ID, course_id
+        db, current_user.id, course_id
     )
     return result
 
 
 # --- Mastery ---
 @router.get("/mastery/{course_id}")
-async def get_course_mastery(course_id: uuid.UUID, db: DbSession):
+async def get_course_mastery(course_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     """コース内トピック別習熟度"""
     mastery = await mastery_service.get_course_mastery(
-        db, DEMO_USER_ID, course_id
+        db, current_user.id, course_id
     )
     return {"topics": mastery, "total": len(mastery)}

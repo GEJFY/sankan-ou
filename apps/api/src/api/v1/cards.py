@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview
 from src.schemas.card import (
     CardWithReviewOut,
@@ -17,19 +17,17 @@ from src.services.fsrs_service import fsrs_service
 
 router = APIRouter(prefix="/cards", tags=["cards"])
 
-# MVP: 固定ユーザーID (認証Phase 3で差し替え)
-DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
-
 
 @router.get("/due", response_model=DueCardsResponse)
 async def get_due_cards(
     db: DbSession,
+    current_user: CurrentUser,
     course_id: uuid.UUID | None = Query(None, description="コースでフィルタ"),
     limit: int = Query(25, ge=1, le=100),
 ) -> DueCardsResponse:
     """復習期日到来カード取得"""
     card_reviews = await fsrs_service.get_due_cards(
-        db, user_id=DEMO_USER_ID, course_id=course_id, limit=limit
+        db, user_id=current_user.id, course_id=course_id, limit=limit
     )
 
     cards_out = []
@@ -62,11 +60,12 @@ async def get_due_cards(
 async def submit_review(
     body: ReviewRequest,
     db: DbSession,
+    current_user: CurrentUser,
 ) -> ReviewResponse:
     """レビュー結果送信 → FSRS更新"""
     # CardReview取得 or 新規作成
     card_review = await fsrs_service.get_or_create_review(
-        db, user_id=DEMO_USER_ID, card_id=body.card_id
+        db, user_id=current_user.id, card_id=body.card_id
     )
 
     # FSRSレビュー実行

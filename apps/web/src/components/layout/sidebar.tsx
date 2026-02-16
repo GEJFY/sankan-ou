@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 
 const NAV_ITEMS = [
   { href: "/", label: "ダッシュボード", icon: "📊" },
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 min-h-screen p-4 flex flex-col">
@@ -46,7 +48,18 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-gray-800">
+      <div className="mt-auto pt-4 border-t border-gray-800 space-y-3">
+        {user && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 truncate">{user.display_name}</span>
+            <button
+              onClick={logout}
+              className="text-xs text-gray-500 hover:text-red-400 transition"
+            >
+              ログアウト
+            </button>
+          </div>
+        )}
         <div className="flex gap-2">
           <span
             className="w-3 h-3 rounded-full"
@@ -61,7 +74,7 @@ export default function Sidebar() {
             style={{ backgroundColor: "#7c3aed" }}
           />
         </div>
-        <p className="text-xs text-gray-600 mt-2">v0.3.0</p>
+        <p className="text-xs text-gray-600">v0.4.0</p>
       </div>
     </aside>
   );
