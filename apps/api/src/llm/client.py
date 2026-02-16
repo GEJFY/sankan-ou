@@ -49,16 +49,24 @@ def _get_openai_client():
     )
 
 
+def _is_reasoning_model(model: str) -> bool:
+    """GPT-5系はreasoning model: temperature=1固定、max_completion_tokens必須"""
+    return model.startswith("gpt-5")
+
+
 async def _openai_generate(
     messages: list[dict], model: str, max_tokens: int, temperature: float,
 ) -> str:
     client = _get_openai_client()
-    response = await client.chat.completions.create(
-        model=model,
-        max_completion_tokens=max_tokens,
-        messages=messages,
-        temperature=temperature,
-    )
+    kwargs: dict = {
+        "model": model,
+        "max_completion_tokens": max_tokens,
+        "messages": messages,
+    }
+    # GPT-5系はtemperature=1のみサポート（reasoning model）
+    if not _is_reasoning_model(model):
+        kwargs["temperature"] = temperature
+    response = await client.chat.completions.create(**kwargs)
     return response.choices[0].message.content or ""
 
 
@@ -66,13 +74,15 @@ async def _openai_stream(
     messages: list[dict], model: str, max_tokens: int, temperature: float,
 ) -> AsyncIterator[str]:
     client = _get_openai_client()
-    stream = await client.chat.completions.create(
-        model=model,
-        max_completion_tokens=max_tokens,
-        messages=messages,
-        temperature=temperature,
-        stream=True,
-    )
+    kwargs: dict = {
+        "model": model,
+        "max_completion_tokens": max_tokens,
+        "messages": messages,
+        "stream": True,
+    }
+    if not _is_reasoning_model(model):
+        kwargs["temperature"] = temperature
+    stream = await client.chat.completions.create(**kwargs)
     async for chunk in stream:
         if chunk.choices and chunk.choices[0].delta.content:
             yield chunk.choices[0].delta.content
