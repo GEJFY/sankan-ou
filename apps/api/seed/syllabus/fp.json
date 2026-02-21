@@ -1,0 +1,26 @@
+{
+  "code": "FP",
+  "name": "FP技能士（ファイナンシャル・プランニング）",
+  "color": "#2563eb",
+  "exam_config": {
+    "total_parts": 2,
+    "passing_score": "120/200 (60%)",
+    "format": "基礎マークシート + 応用記述"
+  },
+  "topics": [
+    {
+      "name": "FP1級 学科試験",
+      "level": 0,
+      "weight_pct": 100,
+      "exam_spec": "65問(基礎50+応用15) / 300分",
+      "children": [
+        {"name": "FP-A. ライフプランニングと資金計画", "level": 1, "weight_pct": 16.7},
+        {"name": "FP-B. リスク管理", "level": 1, "weight_pct": 16.7},
+        {"name": "FP-C. 金融資産運用", "level": 1, "weight_pct": 16.7},
+        {"name": "FP-D. タックスプランニング", "level": 1, "weight_pct": 16.7},
+        {"name": "FP-E. 不動産", "level": 1, "weight_pct": 16.7},
+        {"name": "FP-F. 相続・事業承継", "level": 1, "weight_pct": 16.7}
+      ]
+    }
+  ]
+}

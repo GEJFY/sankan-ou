@@ -1,0 +1,61 @@
+{
+  "code": "BOKI1",
+  "name": "日商簿記検定1級",
+  "color": "#d97706",
+  "exam_config": {
+    "total_parts": 4,
+    "passing_score": "70/100 (各科目40%以上)",
+    "format": "記述・計算"
+  },
+  "topics": [
+    {
+      "name": "商業簿記",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "25点 / 前半90分",
+      "children": [
+        {"name": "BOKI-A. 特殊商品売買・収益認識", "level": 1, "weight_pct": 20},
+        {"name": "BOKI-B. 連結会計", "level": 1, "weight_pct": 25},
+        {"name": "BOKI-C. 企業結合・事業分離", "level": 1, "weight_pct": 20},
+        {"name": "BOKI-D. 金融商品会計", "level": 1, "weight_pct": 20},
+        {"name": "BOKI-E. 外貨換算・在外子会社", "level": 1, "weight_pct": 15}
+      ]
+    },
+    {
+      "name": "会計学",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "25点 / 前半90分",
+      "children": [
+        {"name": "ACCT-A. 財務諸表論", "level": 1, "weight_pct": 25},
+        {"name": "ACCT-B. 税効果会計", "level": 1, "weight_pct": 25},
+        {"name": "ACCT-C. 退職給付会計", "level": 1, "weight_pct": 25},
+        {"name": "ACCT-D. リース・資産除去債務", "level": 1, "weight_pct": 25}
+      ]
+    },
+    {
+      "name": "工業簿記",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "25点 / 後半90分",
+      "children": [
+        {"name": "COST-A. 個別原価計算・総合原価計算", "level": 1, "weight_pct": 30},
+        {"name": "COST-B. 標準原価計算", "level": 1, "weight_pct": 30},
+        {"name": "COST-C. 直接原価計算", "level": 1, "weight_pct": 20},
+        {"name": "COST-D. 本社工場会計", "level": 1, "weight_pct": 20}
+      ]
+    },
+    {
+      "name": "原価計算",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "25点 / 後半90分",
+      "children": [
+        {"name": "MGMT-A. CVP分析・損益分岐点", "level": 1, "weight_pct": 25},
+        {"name": "MGMT-B. 意思決定会計", "level": 1, "weight_pct": 25},
+        {"name": "MGMT-C. 予算管理", "level": 1, "weight_pct": 25},
+        {"name": "MGMT-D. 戦略的原価管理", "level": 1, "weight_pct": 25}
+      ]
+    }
+  ]
+}

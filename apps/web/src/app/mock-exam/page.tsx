@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import { apiFetch } from "@/lib/api-client";
+import { COURSE_COLORS } from "@/lib/constants";
 
 interface ExamConfig {
   course_code: string;
@@ -29,17 +30,25 @@ interface Question {
   course_code: string;
 }
 
-type ExamPhase = "setup" | "running" | "review" | "result";
+interface CourseInfo {
+  id: string;
+  code: string;
+  name: string;
+  color: string;
+}
 
-const COURSE_OPTIONS = [
-  { code: "CIA", name: "CIA (公認内部監査人)", color: "#e94560" },
-  { code: "CISA", name: "CISA (公認情報システム監査人)", color: "#0891b2" },
-  { code: "CFE", name: "CFE (公認不正検査士)", color: "#7c3aed" },
-];
+interface TopicInfo {
+  id: string;
+  name: string;
+}
+
+type ExamPhase = "setup" | "running" | "review" | "result";
 
 export default function MockExamPage() {
   const [phase, setPhase] = useState<ExamPhase>("setup");
-  const [selectedCourse, setSelectedCourse] = useState("CIA");
+  const [courseList, setCourseList] = useState<CourseInfo[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [topics, setTopics] = useState<TopicInfo[]>([]);
   const [config, setConfig] = useState<ExamConfig | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -50,12 +59,29 @@ export default function MockExamPage() {
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // 試験設定取得
+  // コース一覧取得
   useEffect(() => {
+    apiFetch<{ courses: CourseInfo[] }>("/courses")
+      .then((data) => {
+        setCourseList(data.courses);
+        if (data.courses.length > 0) setSelectedCourse(data.courses[0].code);
+      })
+      .catch(() => {});
+  }, []);
+
+  // 試験設定 + トピック取得
+  useEffect(() => {
+    if (!selectedCourse) return;
     apiFetch<ExamConfig>(`/mock-exam/config/${selectedCourse}`)
       .then(setConfig)
       .catch(() => {});
-  }, [selectedCourse]);
+    const course = courseList.find((c) => c.code === selectedCourse);
+    if (course) {
+      apiFetch<{ topics: TopicInfo[] }>(`/courses/${course.id}/topics`)
+        .then((data) => setTopics(data.topics))
+        .catch(() => setTopics([]));
+    }
+  }, [selectedCourse, courseList]);
 
   // タイマー
   useEffect(() => {
@@ -75,15 +101,21 @@ export default function MockExamPage() {
   }, [phase]);
 
   const startExam = async () => {
+    if (topics.length === 0) {
+      setError("トピックが見つかりません。コースのシードデータを確認してください。");
+      return;
+    }
     setIsGenerating(true);
     setError(null);
     try {
+      // ランダムにトピックを選択
+      const topic = topics[Math.floor(Math.random() * topics.length)];
       const data = await apiFetch<{ questions: Question[] }>(
         "/questions/generate",
         {
           method: "POST",
           body: JSON.stringify({
-            topic_id: "00000000-0000-0000-0000-000000000000",
+            topic_id: topic.id,
             count: questionCount,
             difficulty: 3,
           }),
@@ -130,8 +162,7 @@ export default function MockExamPage() {
   const scorePercent =
     questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
   const passed = config ? scorePercent >= config.passing_score : false;
-  const courseColor =
-    COURSE_OPTIONS.find((c) => c.code === selectedCourse)?.color || "#666";
+  const courseColor = COURSE_COLORS[selectedCourse] ?? "#666";
 
   return (
     <AppLayout>
@@ -152,8 +183,8 @@ export default function MockExamPage() {
             {/* コース選択 */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400">資格を選択</label>
-              <div className="flex gap-3">
-                {COURSE_OPTIONS.map((c) => (
+              <div className="flex gap-3 flex-wrap">
+                {courseList.map((c) => (
                   <button
                     key={c.code}
                     onClick={() => setSelectedCourse(c.code)}
@@ -164,7 +195,7 @@ export default function MockExamPage() {
                     }`}
                     style={
                       selectedCourse === c.code
-                        ? { backgroundColor: c.color }
+                        ? { backgroundColor: COURSE_COLORS[c.code] ?? c.color }
                         : {}
                     }
                   >

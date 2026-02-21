@@ -37,6 +37,8 @@ interface Topic {
 export default function QuizPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -55,8 +57,30 @@ export default function QuizPage() {
       .catch(() => setError("コース取得に失敗しました"));
   }, []);
 
-  const generateQuestions = async () => {
+  // コース変更時にトピック一覧を取得
+  useEffect(() => {
     if (!selectedCourse) return;
+    setTopics([]);
+    setSelectedTopic("");
+    apiFetch<{ topics: Topic[] }>(`/courses/${selectedCourse}/topics`)
+      .then((data) => {
+        setTopics(data.topics);
+        if (data.topics.length > 0) {
+          // ランダムにトピックを選択
+          const idx = Math.floor(Math.random() * data.topics.length);
+          setSelectedTopic(data.topics[idx].id);
+        }
+      })
+      .catch(() => {
+        // トピック取得失敗は無視（コースがDBにない場合）
+      });
+  }, [selectedCourse]);
+
+  const generateQuestions = async () => {
+    if (!selectedCourse || !selectedTopic) {
+      setError("トピックが見つかりません。コースのシードデータを確認してください。");
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
@@ -65,18 +89,12 @@ export default function QuizPage() {
     setScore({ correct: 0, total: 0 });
 
     try {
-      // コースの最初のトピックを取得 (簡易版)
-      const course = courses.find((c) => c.id === selectedCourse);
-      if (!course) return;
-
-      // コースのトピック一覧は/coursesから取れないので、固定デモ用に
-      // 実際にはトピック選択UIが必要だが、MVPではランダム生成
       const data = await apiFetch<{ questions: Question[] }>(
         "/questions/generate",
         {
           method: "POST",
           body: JSON.stringify({
-            topic_id: "00000000-0000-0000-0000-000000000000", // placeholder
+            topic_id: selectedTopic,
             count: 5,
             difficulty: 2,
           }),
@@ -125,6 +143,7 @@ export default function QuizPage() {
 
   const question = questions[currentQ];
   const isComplete = currentQ >= questions.length && questions.length > 0;
+  const selectedCourseMeta = courses.find((c) => c.id === selectedCourse);
 
   return (
     <AppLayout>
@@ -137,11 +156,13 @@ export default function QuizPage() {
           </div>
         )}
 
-        {/* コース選択 + 生成ボタン */}
+        {/* コース・トピック選択 + 生成ボタン */}
         {questions.length === 0 && !isGenerating && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 text-center space-y-6">
-            <p className="text-gray-400">コースを選択して問題を生成</p>
-            <div className="flex gap-3 justify-center">
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 space-y-6">
+            <p className="text-gray-400 text-center">コースとトピックを選択して問題を生成</p>
+
+            {/* コース選択 */}
+            <div className="flex gap-3 justify-center flex-wrap">
               {courses.map((course) => (
                 <button
                   key={course.id}
@@ -161,12 +182,34 @@ export default function QuizPage() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={generateQuestions}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold"
-            >
-              5問を生成
-            </button>
+
+            {/* トピック選択 */}
+            {topics.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 text-center">トピック</p>
+                <select
+                  value={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+                >
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="text-center">
+              <button
+                onClick={generateQuestions}
+                disabled={!selectedTopic}
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                5問を生成
+              </button>
+            </div>
           </div>
         )}
 

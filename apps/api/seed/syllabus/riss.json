@@ -1,0 +1,27 @@
+{
+  "code": "RISS",
+  "name": "情報処理安全確保支援士",
+  "color": "#dc2626",
+  "exam_config": {
+    "total_parts": 3,
+    "passing_score": "各60/100",
+    "format": "MCQ + 記述"
+  },
+  "topics": [
+    {
+      "name": "RISS試験（午前I/II + 午後）",
+      "level": 0,
+      "weight_pct": 100,
+      "exam_spec": "59問(午前I30+午前II25+午後4中2選択) / 240分",
+      "children": [
+        {"name": "RISS-A. 暗号技術・認証技術", "level": 1, "weight_pct": 20},
+        {"name": "RISS-B. セキュリティプロトコル", "level": 1, "weight_pct": 15},
+        {"name": "RISS-C. 攻撃手法と対策", "level": 1, "weight_pct": 15},
+        {"name": "RISS-D. セキュリティマネジメント(ISMS)", "level": 1, "weight_pct": 15},
+        {"name": "RISS-E. インシデント対応・フォレンジック", "level": 1, "weight_pct": 15},
+        {"name": "RISS-F. ネットワーク・クラウドセキュリティ", "level": 1, "weight_pct": 10},
+        {"name": "RISS-G. セキュア開発・脆弱性管理", "level": 1, "weight_pct": 10}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "code": "USCPA",
+  "name": "U.S. CPA（米国公認会計士）",
+  "color": "#059669",
+  "exam_config": {
+    "total_parts": 4,
+    "passing_score": "75/99 scaled",
+    "format": "MCQ + TBS"
+  },
+  "topics": [
+    {
+      "name": "AUD: Auditing and Attestation",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "85問(MCQ78+TBS7) / 4時間",
+      "children": [
+        {"name": "AUD-A. 監査の倫理・独立性・品質管理", "level": 1, "weight_pct": 15},
+        {"name": "AUD-B. 監査業務の計画と実施", "level": 1, "weight_pct": 30},
+        {"name": "AUD-C. 内部統制の評価", "level": 1, "weight_pct": 20},
+        {"name": "AUD-D. 監査報告書", "level": 1, "weight_pct": 20},
+        {"name": "AUD-E. その他の保証・証明業務", "level": 1, "weight_pct": 15}
+      ]
+    },
+    {
+      "name": "FAR: Financial Accounting and Reporting",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "57問(MCQ50+TBS7) / 4時間",
+      "children": [
+        {"name": "FAR-A. 財務会計の基礎", "level": 1, "weight_pct": 20},
+        {"name": "FAR-B. 資産の会計処理", "level": 1, "weight_pct": 20},
+        {"name": "FAR-C. 負債・資本の会計処理", "level": 1, "weight_pct": 20},
+        {"name": "FAR-D. 政府会計・非営利会計", "level": 1, "weight_pct": 20},
+        {"name": "FAR-E. 連結財務諸表", "level": 1, "weight_pct": 20}
+      ]
+    },
+    {
+      "name": "REG: Taxation and Regulation",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "80問(MCQ72+TBS8) / 4時間",
+      "children": [
+        {"name": "REG-A. 個人所得税", "level": 1, "weight_pct": 25},
+        {"name": "REG-B. 法人税", "level": 1, "weight_pct": 25},
+        {"name": "REG-C. ビジネス法", "level": 1, "weight_pct": 25},
+        {"name": "REG-D. 連邦税務手続", "level": 1, "weight_pct": 25}
+      ]
+    },
+    {
+      "name": "BAR: Business Analysis and Reporting",
+      "level": 0,
+      "weight_pct": 25,
+      "exam_spec": "57問(MCQ50+TBS7) / 4時間",
+      "children": [
+        {"name": "BAR-A. 財務データ分析", "level": 1, "weight_pct": 30},
+        {"name": "BAR-B. 技術的会計・報告", "level": 1, "weight_pct": 40},
+        {"name": "BAR-C. 原価計算・管理会計", "level": 1, "weight_pct": 30}
+      ]
+    }
+  ]
+}
