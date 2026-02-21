@@ -13,16 +13,17 @@ class CISAPlugin(CoursePlugin):
     exam_config = ExamConfig(
         total_questions=150,
         duration_minutes=240,
-        passing_score=0.45,  # スケールドスコア450/800
+        passing_score=0.60,
         sections=[
-            {"domain": 1, "name": "情報システム監査のプロセス", "weight_pct": 21.0},
-            {"domain": 2, "name": "ITガバナンスとマネジメント", "weight_pct": 17.0},
-            {"domain": 3, "name": "情報システムの取得・開発・導入", "weight_pct": 12.0},
-            {"domain": 4, "name": "情報システムの運用とレジリエンス", "weight_pct": 23.0},
-            {"domain": 5, "name": "情報資産の保護", "weight_pct": 27.0},
+            {"domain": 1, "name": "情報システム監査のプロセス", "questions": 32, "weight_pct": 21.0},
+            {"domain": 2, "name": "ITガバナンスとマネジメント", "questions": 26, "weight_pct": 17.0},
+            {"domain": 3, "name": "情報システムの取得・開発・導入", "questions": 18, "weight_pct": 12.0},
+            {"domain": 4, "name": "情報システムの運用とレジリエンス", "questions": 35, "weight_pct": 23.0},
+            {"domain": 5, "name": "情報資産の保護", "questions": 41, "weight_pct": 27.0},
         ],
-        format_notes="ISACA（情報システムコントロール協会）の試験スタイル。4択問題。"
-        "ITガバナンス、セキュリティ、監査プロセスに焦点。COBIT/ITIL準拠。",
+        format_notes="ISACA認定。4択MCQ 150問/4時間。"
+        "スケールドスコア450/800で合格（200-800スケール、正答率≒60%目安）。"
+        "COBIT/ITIL準拠。Domain 4+5で全体の50%を占める重点領域。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:
