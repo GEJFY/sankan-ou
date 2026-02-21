@@ -1,21 +1,21 @@
-"""テスト用DBセットアップ — テーブル作成（独立エンジン使用）"""
+"""テスト用DBセットアップ — Alembicマイグレーション実行"""
 
-import asyncio
-import os
-
-from sqlalchemy.ext.asyncio import create_async_engine
-
-from src.models import Base  # noqa: F401 — 全モデルをBase.metadataに登録
+import subprocess
+import sys
 
 
-async def main():
-    url = os.environ["DATABASE_URL"]
-    engine = create_async_engine(url)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await engine.dispose()
-    print("All tables created successfully.")
+def main():
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr, file=sys.stderr)
+        sys.exit(result.returncode)
+    print("Database migration completed successfully.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

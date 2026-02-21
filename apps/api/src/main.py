@@ -29,22 +29,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("GRC Triple Crown API starting...")
 
-    # ゲーミフィケーション用テーブル作成 + バッジシード
+    # バッジシード（テーブルはAlembicマイグレーションで管理）
     try:
-        from src.database import engine, async_session_factory
-        from src.models.base import Base
-        from src.models.gamification import Badge, DailyMission, UserBadge, UserXP, XPLog
-
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
+        from src.database import async_session_factory
         from src.services.gamification_service import seed_badges
 
         async with async_session_factory() as session:
             await seed_badges(session)
-        logger.info("Gamification tables and badges initialized")
+        logger.info("Badge seed completed")
     except Exception as e:
-        logger.warning(f"Gamification init skipped: {e}")
+        logger.warning(f"Badge seed skipped: {e}")
 
     yield
     logger.info("GRC Triple Crown API shutting down...")
