@@ -25,6 +25,15 @@ def _auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+async def _get_course_id(client: AsyncClient, code: str) -> str:
+    """ヘルパー: コースIDを取得"""
+    courses_resp = await client.get("/api/v1/courses")
+    courses = courses_resp.json()["courses"]
+    course = next((c for c in courses if c["code"] == code), None)
+    assert course is not None, f"Course {code} not found. Courses: {[c['code'] for c in courses]}"
+    return course["id"]
+
+
 @pytest.mark.integration
 async def test_get_exam_config(client: AsyncClient):
     """試験設定取得"""
@@ -37,21 +46,16 @@ async def test_get_exam_config(client: AsyncClient):
 
 
 @pytest.mark.integration
-async def test_submit_mock_exam(client: AsyncClient):
+async def test_submit_mock_exam(client: AsyncClient, seed_courses):
     """模擬試験結果の保存"""
     token = await _register_and_login(client, "mockexam1@example.com")
-
-    # コースID取得
-    courses_resp = await client.get("/api/v1/courses")
-    courses = courses_resp.json()["courses"]
-    cia = next((c for c in courses if c["code"] == "CIA"), None)
-    assert cia is not None
+    cia_id = await _get_course_id(client, "CIA")
 
     resp = await client.post(
         "/api/v1/mock-exam/submit",
         headers=_auth_headers(token),
         json={
-            "course_id": cia["id"],
+            "course_id": cia_id,
             "course_code": "CIA",
             "total_questions": 10,
             "correct_count": 7,
@@ -92,14 +96,10 @@ async def test_submit_mock_exam_unauthenticated(client: AsyncClient):
 
 
 @pytest.mark.integration
-async def test_get_mock_exam_history(client: AsyncClient):
+async def test_get_mock_exam_history(client: AsyncClient, seed_courses):
     """模擬試験履歴取得"""
     token = await _register_and_login(client, "mockexam2@example.com")
-
-    # コースID取得
-    courses_resp = await client.get("/api/v1/courses")
-    courses = courses_resp.json()["courses"]
-    cia = next((c for c in courses if c["code"] == "CIA"), None)
+    cia_id = await _get_course_id(client, "CIA")
 
     # 2件保存
     for correct in [6, 8]:
@@ -107,7 +107,7 @@ async def test_get_mock_exam_history(client: AsyncClient):
             "/api/v1/mock-exam/submit",
             headers=_auth_headers(token),
             json={
-                "course_id": cia["id"],
+                "course_id": cia_id,
                 "course_code": "CIA",
                 "total_questions": 10,
                 "correct_count": correct,
@@ -132,23 +132,20 @@ async def test_get_mock_exam_history(client: AsyncClient):
 
 
 @pytest.mark.integration
-async def test_get_mock_exam_history_filter(client: AsyncClient):
+async def test_get_mock_exam_history_filter(client: AsyncClient, seed_courses):
     """模擬試験履歴のコースフィルタ"""
     token = await _register_and_login(client, "mockexam3@example.com")
-
-    courses_resp = await client.get("/api/v1/courses")
-    courses = courses_resp.json()["courses"]
-    cia = next((c for c in courses if c["code"] == "CIA"), None)
-    cisa = next((c for c in courses if c["code"] == "CISA"), None)
+    cia_id = await _get_course_id(client, "CIA")
+    cisa_id = await _get_course_id(client, "CISA")
 
     # CIA 1件, CISA 1件
-    for course_info in [(cia, "CIA"), (cisa, "CISA")]:
+    for course_id, course_code in [(cia_id, "CIA"), (cisa_id, "CISA")]:
         await client.post(
             "/api/v1/mock-exam/submit",
             headers=_auth_headers(token),
             json={
-                "course_id": course_info[0]["id"],
-                "course_code": course_info[1],
+                "course_id": course_id,
+                "course_code": course_code,
                 "total_questions": 10,
                 "correct_count": 7,
                 "passing_score_pct": 60,
