@@ -56,8 +56,10 @@ export default function MockExamPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   // コース一覧取得
   useEffect(() => {
@@ -90,7 +92,8 @@ export default function MockExamPage() {
         setTimeLeft((t) => {
           if (t <= 1) {
             clearInterval(timerRef.current!);
-            setPhase("result");
+            // タイムアップ → submitExam で保存も実行
+            submitExam();
             return 0;
           }
           return t - 1;
@@ -98,6 +101,7 @@ export default function MockExamPage() {
       }, 1000);
       return () => clearInterval(timerRef.current!);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   const startExam = async () => {
@@ -127,6 +131,8 @@ export default function MockExamPage() {
         ? Math.min(config.duration_minutes, questionCount * 2)
         : questionCount * 2;
       setTimeLeft(duration * 60);
+      startTimeRef.current = Date.now();
+      setIsSaved(false);
       setPhase("running");
     } catch (e) {
       setError(
@@ -142,9 +148,40 @@ export default function MockExamPage() {
     setAnswers(newAnswers);
   };
 
-  const submitExam = () => {
+  const submitExam = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setPhase("result");
+
+    // 結果をサーバーに保存
+    const course = courseList.find((c) => c.code === selectedCourse);
+    if (!course) return;
+
+    const correct = questions.reduce((sum, q, i) => {
+      const ans = answers[i];
+      if (ans !== null && q.choices[ans]?.is_correct) return sum + 1;
+      return sum;
+    }, 0);
+
+    const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
+
+    try {
+      await apiFetch("/mock-exam/submit", {
+        method: "POST",
+        body: JSON.stringify({
+          course_id: course.id,
+          course_code: selectedCourse,
+          total_questions: questions.length,
+          correct_count: correct,
+          passing_score_pct: config?.passing_score ?? 70,
+          time_taken_seconds: timeTaken,
+          question_ids: questions.map((q) => q.id),
+          answer_indices: answers,
+        }),
+      });
+      setIsSaved(true);
+    } catch {
+      // 保存失敗は無視（結果表示を優先）
+    }
   };
 
   const formatTime = (sec: number) => {
@@ -384,6 +421,9 @@ export default function MockExamPage() {
               >
                 {passed ? "合格" : "不合格"}（合格基準: {config?.passing_score}%）
               </div>
+              {isSaved && (
+                <div className="text-xs text-gray-500">結果を保存しました</div>
+              )}
             </div>
 
             {/* 問題別レビュー */}

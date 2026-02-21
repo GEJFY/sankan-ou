@@ -2,12 +2,14 @@
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from src.config import settings
 from src.database import get_db
 from src.main import create_app
+from src.models.course import Course
 
 
 # テスト用エンジン: NullPoolでイベントループ間の接続プール問題を回避
@@ -45,3 +47,17 @@ async def client(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+async def seed_courses():
+    """テスト用最小コースデータ作成"""
+    async with _test_session_factory() as session:
+        existing = await session.execute(select(Course).where(Course.code == "CIA"))
+        if existing.scalar_one_or_none() is None:
+            for code, name, color in [
+                ("CIA", "Certified Internal Auditor", "#e94560"),
+                ("CISA", "Certified Information Systems Auditor", "#0891b2"),
+            ]:
+                session.add(Course(code=code, name=name, color=color))
+            await session.commit()
