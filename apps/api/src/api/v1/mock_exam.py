@@ -2,9 +2,16 @@
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
+from src.models.mock_exam import MockExamResult
 from src.plugins.registry import get_plugin
+from src.schemas.mock_exam import (
+    MockExamHistoryResponse,
+    MockExamResultResponse,
+    SubmitMockExamRequest,
+)
 
 router = APIRouter(prefix="/mock-exam", tags=["mock-exam"])
 
@@ -64,3 +71,65 @@ async def get_exam_config(course_code: str):
         "sections": plugin.exam_config.sections,
         "format_notes": plugin.exam_config.format_notes,
     }
+
+
+@router.post("/submit", response_model=MockExamResultResponse)
+async def submit_mock_exam(
+    body: SubmitMockExamRequest, db: DbSession, current_user: CurrentUser,
+):
+    """模擬試験結果を保存"""
+    score_pct = (
+        (body.correct_count / body.total_questions * 100)
+        if body.total_questions > 0
+        else 0
+    )
+    passed = score_pct >= body.passing_score_pct
+
+    result = MockExamResult(
+        user_id=current_user.id,
+        course_id=body.course_id,
+        course_code=body.course_code.upper(),
+        score_pct=round(score_pct, 2),
+        correct_count=body.correct_count,
+        total_questions=body.total_questions,
+        passed=passed,
+        passing_score_pct=body.passing_score_pct,
+        time_taken_seconds=body.time_taken_seconds,
+        question_ids=body.question_ids,
+        answer_indices=body.answer_indices,
+    )
+    db.add(result)
+    await db.flush()
+    await db.commit()
+    await db.refresh(result)
+    return result
+
+
+@router.get("/history", response_model=MockExamHistoryResponse)
+async def get_mock_exam_history(
+    db: DbSession,
+    current_user: CurrentUser,
+    course_code: str | None = None,
+    limit: int = Query(default=20, le=100),
+):
+    """模擬試験履歴取得"""
+    base_filter = MockExamResult.user_id == current_user.id
+    if course_code:
+        base_filter = base_filter & (MockExamResult.course_code == course_code.upper())
+
+    total = (
+        await db.execute(
+            select(func.count(MockExamResult.id)).where(base_filter)
+        )
+    ).scalar() or 0
+
+    rows = (
+        await db.execute(
+            select(MockExamResult)
+            .where(base_filter)
+            .order_by(MockExamResult.created_at.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+
+    return MockExamHistoryResponse(results=rows, total_count=total)

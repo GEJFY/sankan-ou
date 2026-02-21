@@ -10,6 +10,7 @@ import SynergyMap from "@/components/dashboard/synergy-map";
 import StudyHistory from "@/components/dashboard/study-history";
 import StreakBadge from "@/components/dashboard/streak-badge";
 import { apiFetch } from "@/lib/api-client";
+import { COURSE_COLORS } from "@/lib/constants";
 
 interface CourseSummary {
   course_id: string;
@@ -38,9 +39,20 @@ interface WeakTopic {
   failed_cards: number;
 }
 
+interface MockExamResultItem {
+  id: string;
+  course_code: string;
+  score_pct: number;
+  correct_count: number;
+  total_questions: number;
+  passed: boolean;
+  created_at: string;
+}
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
+  const [mockExams, setMockExams] = useState<MockExamResultItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +66,15 @@ export default function DashboardPage() {
         setWeakTopics(weak.topics);
       } catch (e) {
         setError(e instanceof Error ? e.message : "データ取得に失敗しました");
+      }
+      // 模試履歴は独立して取得（失敗してもOK）
+      try {
+        const examData = await apiFetch<{ results: MockExamResultItem[] }>(
+          "/mock-exam/history?limit=5"
+        );
+        setMockExams(examData.results);
+      } catch {
+        // 模試履歴がなくてもダッシュボードは表示
       }
     };
     load();
@@ -120,6 +141,60 @@ export default function DashboardPage() {
           <SynergyMap />
           <StudyHistory />
         </div>
+
+        {/* 最近の模擬試験 */}
+        {mockExams.length > 0 && (
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+            <h2 className="text-lg font-semibold mb-4">最近の模擬試験</h2>
+            <div className="space-y-2">
+              {mockExams.map((exam) => (
+                <div
+                  key={exam.id}
+                  className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                      style={{
+                        backgroundColor:
+                          COURSE_COLORS[exam.course_code] ?? "#666",
+                      }}
+                    >
+                      {exam.course_code}
+                    </span>
+                    <span className="text-sm text-gray-400">
+                      {exam.correct_count}/{exam.total_questions}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-lg font-bold ${
+                        exam.passed ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {Math.round(exam.score_pct)}%
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                        exam.passed
+                          ? "bg-green-900/40 text-green-400"
+                          : "bg-red-900/40 text-red-400"
+                      }`}
+                    >
+                      {exam.passed ? "合格" : "不合格"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(exam.created_at).toLocaleDateString("ja-JP", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
