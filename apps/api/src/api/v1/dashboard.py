@@ -8,6 +8,7 @@ from sqlalchemy import case, func, select
 from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview, ReviewLog
 from src.models.course import Course, Topic
+from src.services.session_service import session_service
 from src.schemas.dashboard import (
     CourseSummary,
     DailyHistory,
@@ -87,10 +88,12 @@ async def get_summary(db: DbSession, current_user: CurrentUser) -> DashboardSumm
         )
     ).scalar() or 0
 
+    streak = await session_service.get_streak_days(db, current_user.id)
+
     return DashboardSummaryResponse(
         courses=summaries,
         total_studied_today=studied_today,
-        streak_days=0,
+        streak_days=streak,
     )
 
 
