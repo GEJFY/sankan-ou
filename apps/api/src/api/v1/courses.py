@@ -4,8 +4,13 @@ from fastapi import APIRouter
 from sqlalchemy import select
 
 from src.deps import DbSession
-from src.models.course import Course
-from src.schemas.course import CourseListResponse, CourseOut
+from src.models.course import Course, Topic
+from src.schemas.course import (
+    CourseListResponse,
+    CourseOut,
+    TopicListResponse,
+    TopicOut,
+)
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -28,3 +33,19 @@ async def get_course(course_id: str, db: DbSession) -> CourseOut:
     result = await db.execute(stmt)
     course = result.scalar_one()
     return CourseOut.model_validate(course)
+
+
+@router.get("/{course_id}/topics", response_model=TopicListResponse)
+async def list_topics(course_id: str, db: DbSession) -> TopicListResponse:
+    """コース別トピック一覧取得（子トピックのみ = level 1）"""
+    stmt = (
+        select(Topic)
+        .where(Topic.course_id == course_id)
+        .where(Topic.level == 1)
+        .order_by(Topic.sort_order)
+    )
+    result = await db.execute(stmt)
+    topics = result.scalars().all()
+    return TopicListResponse(
+        topics=[TopicOut.model_validate(t) for t in topics]
+    )

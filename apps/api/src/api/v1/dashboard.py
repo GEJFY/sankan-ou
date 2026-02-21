@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 
 from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview, ReviewLog
@@ -140,10 +140,14 @@ async def get_weak_topics(db: DbSession, current_user: CurrentUser) -> WeakTopic
 @router.get("/history", response_model=HistoryResponse)
 async def get_history(db: DbSession, current_user: CurrentUser) -> HistoryResponse:
     """直近14日の学習履歴"""
+    # rating >= 3 (Good/Easy) を正答としてカウント
     stmt = (
         select(
             func.date(ReviewLog.reviewed_at).label("review_date"),
             func.count(ReviewLog.id).label("cards_reviewed"),
+            func.sum(
+                case((ReviewLog.rating >= 3, 1), else_=0)
+            ).label("correct_count"),
         )
         .join(CardReview, ReviewLog.card_review_id == CardReview.id)
         .where(CardReview.user_id == current_user.id)
@@ -158,7 +162,7 @@ async def get_history(db: DbSession, current_user: CurrentUser) -> HistoryRespon
         DailyHistory(
             date=str(row.review_date),
             cards_reviewed=row.cards_reviewed,
-            correct=0,
+            correct=row.correct_count or 0,
             minutes=row.cards_reviewed,
         )
         for row in rows
