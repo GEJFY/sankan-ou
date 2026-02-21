@@ -9,8 +9,8 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import async_session_factory, engine
-from src.models import Base, Card, CardReview, Course, Topic, User, UserEnrollment
+from src.database import async_session_factory
+from src.models import Card, CardReview, Course, Topic, User, UserEnrollment
 
 SYLLABUS_DIR = Path(__file__).parent / "syllabus"
 
@@ -642,9 +642,8 @@ async def seed_sample_cards(
 
 async def main() -> None:
     """メインシード処理"""
-    # テーブル作成 (開発用 - 本番ではAlembic使用)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # テーブルはAlembicマイグレーションで管理
+    # 実行前に `alembic upgrade head` を実行すること
 
     async with async_session_factory() as db:
         try:
