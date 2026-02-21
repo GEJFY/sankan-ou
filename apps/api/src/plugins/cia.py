@@ -11,16 +11,17 @@ class CIAPlugin(CoursePlugin):
     icon = "🔍"
 
     exam_config = ExamConfig(
-        total_questions=125,
-        duration_minutes=150,
-        passing_score=0.60,
+        total_questions=325,
+        duration_minutes=390,
+        passing_score=0.75,
         sections=[
-            {"part": 1, "name": "内部監査の基礎", "questions": 125, "weight_pct": 33.3},
-            {"part": 2, "name": "内部監査の実務", "questions": 100, "weight_pct": 33.3},
-            {"part": 3, "name": "ビジネス知識", "questions": 100, "weight_pct": 33.3},
+            {"part": 1, "name": "内部監査の基礎", "questions": 125, "duration_min": 150, "weight_pct": 33.3},
+            {"part": 2, "name": "内部監査の実務", "questions": 100, "duration_min": 120, "weight_pct": 33.3},
+            {"part": 3, "name": "ビジネス知識", "questions": 100, "duration_min": 120, "weight_pct": 33.3},
         ],
-        format_notes="IIA（内部監査人協会）の試験スタイル。4択問題。"
-        "実務的なシナリオベースの問題を含む。Global Internal Audit Standardsに準拠。",
+        format_notes="IIA（内部監査人協会）認定。4択MCQ。3パート各独立受験。"
+        "スケールドスコア600/750（≒正答率75%）で合格。"
+        "Global Internal Audit Standards(2024年改訂)準拠。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:

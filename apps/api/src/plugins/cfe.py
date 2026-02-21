@@ -11,18 +11,18 @@ class CFEPlugin(CoursePlugin):
     icon = "⚖️"
 
     exam_config = ExamConfig(
-        total_questions=500,
-        duration_minutes=0,  # セクション別、制限なし（推奨75分/セクション）
+        total_questions=400,
+        duration_minutes=480,
         passing_score=0.75,
         sections=[
-            {"section": 1, "name": "財務取引と不正スキーム", "questions": 85, "weight_pct": 25.0},
-            {"section": 2, "name": "法律", "questions": 90, "weight_pct": 25.0},
-            {"section": 3, "name": "不正調査", "questions": 85, "weight_pct": 25.0},
-            {"section": 4, "name": "不正防止と抑止", "questions": 90, "weight_pct": 25.0},
+            {"section": 1, "name": "財務取引と不正スキーム", "questions": 100, "duration_min": 120, "weight_pct": 25.0},
+            {"section": 2, "name": "法律", "questions": 100, "duration_min": 120, "weight_pct": 25.0},
+            {"section": 3, "name": "不正調査", "questions": 100, "duration_min": 120, "weight_pct": 25.0},
+            {"section": 4, "name": "不正防止と抑止", "questions": 100, "duration_min": 120, "weight_pct": 25.0},
         ],
-        format_notes="ACFE（公認不正検査士協会）の試験スタイル。"
-        "True/False + 4択の混合形式。法律と調査手法に焦点。"
-        "事例ベースのシナリオ問題が多い。",
+        format_notes="ACFE認定。4セクション各100問/2時間（計400問/8時間）。"
+        "MCQ + True/False混合。各セクション75%正答で合格。"
+        "セクション別受験可。不合格時は最大5回まで再受験可能。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:

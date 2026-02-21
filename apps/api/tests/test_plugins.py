@@ -79,7 +79,7 @@ def test_uscpa_plugin_details():
     uscpa = get_plugin("USCPA")
     assert uscpa.course_name == "U.S. CPA（米国公認会計士）"
     assert uscpa.color == "#059669"
-    assert uscpa.exam_config.total_questions == 276
+    assert uscpa.exam_config.total_questions == 279
     assert uscpa.exam_config.passing_score == 0.75
     assert len(uscpa.exam_config.sections) == 4
 
@@ -115,7 +115,8 @@ def test_fp_plugin_details():
     fp = get_plugin("FP")
     assert fp.course_name == "FP技能士（ファイナンシャル・プランニング）"
     assert fp.color == "#2563eb"
-    assert fp.exam_config.total_questions == 70
+    assert fp.exam_config.total_questions == 65
+    assert fp.exam_config.duration_minutes == 300
     assert fp.exam_config.passing_score == 0.60
     assert len(fp.exam_config.sections) == 2
 
@@ -129,9 +130,10 @@ def test_riss_plugin_details():
     riss = get_plugin("RISS")
     assert riss.course_name == "情報処理安全確保支援士"
     assert riss.color == "#dc2626"
-    assert riss.exam_config.total_questions == 95
+    assert riss.exam_config.total_questions == 59
+    assert riss.exam_config.duration_minutes == 240
     assert riss.exam_config.passing_score == 0.60
-    assert len(riss.exam_config.sections) == 4
+    assert len(riss.exam_config.sections) == 3  # 午前I, 午前II, 午後(統合)
 
     syllabus = riss.get_syllabus()
     names = [t.name for t in syllabus]

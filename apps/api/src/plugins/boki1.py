@@ -15,14 +15,15 @@ class Boki1Plugin(CoursePlugin):
         duration_minutes=180,
         passing_score=0.70,
         sections=[
-            {"part": 1, "name": "商業簿記", "questions": 25, "weight_pct": 25},
-            {"part": 2, "name": "会計学", "questions": 25, "weight_pct": 25},
-            {"part": 3, "name": "工業簿記", "questions": 25, "weight_pct": 25},
-            {"part": 4, "name": "原価計算", "questions": 25, "weight_pct": 25},
+            {"part": 1, "name": "商業簿記", "points": 25, "duration_min": 90, "weight_pct": 25},
+            {"part": 2, "name": "会計学", "points": 25, "duration_min": 90, "weight_pct": 25},
+            {"part": 3, "name": "工業簿記", "points": 25, "duration_min": 90, "weight_pct": 25},
+            {"part": 4, "name": "原価計算", "points": 25, "duration_min": 90, "weight_pct": 25},
         ],
-        format_notes="日商簿記検定1級。4科目各25点(100点満点)。"
-        "合格基準は70点以上(各科目10点以上)。"
-        "記述式・計算問題が中心。年2回(6月・11月)実施。",
+        format_notes="日商簿記検定1級。4科目各25点の100点満点（問題数は回により変動）。"
+        "前半(商業簿記+会計学)90分 → 休憩15分 → 後半(工業簿記+原価計算)90分。"
+        "合格基準: 70点以上かつ各科目10点(40%)以上。"
+        "記述式・計算問題中心。年2回(6月・11月)統一試験のみ。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:

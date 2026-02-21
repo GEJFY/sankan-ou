@@ -11,18 +11,19 @@ class USCPAPlugin(CoursePlugin):
     icon = "💼"
 
     exam_config = ExamConfig(
-        total_questions=276,
+        total_questions=279,
         duration_minutes=960,
         passing_score=0.75,
         sections=[
-            {"part": 1, "name": "AUD (Auditing and Attestation)", "questions": 72, "weight_pct": 25},
-            {"part": 2, "name": "FAR (Financial Accounting and Reporting)", "questions": 50, "weight_pct": 25},
-            {"part": 3, "name": "REG (Taxation and Regulation)", "questions": 72, "weight_pct": 25},
-            {"part": 4, "name": "Discipline (BAR/ISC/TCP)", "questions": 82, "weight_pct": 25},
+            {"part": 1, "name": "AUD (Auditing and Attestation)", "mcq": 78, "tbs": 7, "questions": 85, "weight_pct": 25},
+            {"part": 2, "name": "FAR (Financial Accounting and Reporting)", "mcq": 50, "tbs": 7, "questions": 57, "weight_pct": 25},
+            {"part": 3, "name": "REG (Taxation and Regulation)", "mcq": 72, "tbs": 8, "questions": 80, "weight_pct": 25},
+            {"part": 4, "name": "Discipline (BAR/ISC/TCP)", "mcq": 50, "tbs": 7, "questions": 57, "weight_pct": 25},
         ],
-        format_notes="AICPA Uniform CPA Examination。4セクション。"
-        "MCQ + TBS（Task-Based Simulation）の混合形式。"
-        "CPA Evolution（2024年新制度）ではCore 3科目 + Discipline 1科目選択。",
+        format_notes="AICPA Uniform CPA Examination（CPA Evolution 2024年新制度）。"
+        "Core 3科目(AUD/FAR/REG) + Discipline 1科目(BAR/ISC/TCP)選択。"
+        "各4時間。MCQ 50% + TBS 50%の配点比率。"
+        "スケールドスコア75/99で合格（正答率≒60-65%目安）。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:

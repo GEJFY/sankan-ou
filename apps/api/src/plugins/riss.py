@@ -11,17 +11,18 @@ class RISSPlugin(CoursePlugin):
     icon = "🔐"
 
     exam_config = ExamConfig(
-        total_questions=95,
-        duration_minutes=320,
+        total_questions=59,
+        duration_minutes=240,
         passing_score=0.60,
         sections=[
-            {"part": 1, "name": "午前I (共通知識)", "questions": 30, "weight_pct": 15},
-            {"part": 2, "name": "午前II (専門知識)", "questions": 25, "weight_pct": 20},
-            {"part": 3, "name": "午後I (記述式)", "questions": 3, "weight_pct": 30},
-            {"part": 4, "name": "午後II (論述式)", "questions": 2, "weight_pct": 35},
+            {"part": 1, "name": "午前I (共通知識)", "questions": 30, "duration_min": 50, "format": "4択MCQ", "weight_pct": 25},
+            {"part": 2, "name": "午前II (専門知識)", "questions": 25, "duration_min": 40, "format": "4択MCQ", "weight_pct": 25},
+            {"part": 3, "name": "午後 (記述式)", "questions": 4, "select": 2, "duration_min": 150, "format": "記述式", "weight_pct": 50},
         ],
-        format_notes="IPA情報処理安全確保支援士試験(SC)。午前I(50分)/午前II(40分)/午後(150分)。"
-        "2023年度から午後は午後I・IIを統合。合格基準は各60点以上。"
+        format_notes="IPA情報処理安全確保支援士試験(SC)。"
+        "午前I(30問/50分) → 午前II(25問/40分) → 午後(4問中2問選択/150分)。"
+        "2023年度秋期から午後I・IIを統合し選択の幅と時間配分の自由度を拡大。"
+        "各区分100点満点で60点以上が合格基準。"
         "年2回(4月・10月)実施。合格後は登録によりRISS(登録セキスペ)名称使用可。",
     )
 
