@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.llm.client import generate, MODEL_SONNET
-from src.llm.gemini_client import generate_slide_image, is_gemini_available
+from src.llm.gemini_client import generate_slide_image, generate_text as gemini_generate_text, is_gemini_available
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +54,19 @@ async def generate_slides(body: GenerateSlideRequest):
 
     user_prompt = f"トピック「{body.topic}」について{body.slide_count}枚のスライドを作成してください。"
 
+    # Azure LLM → Gemini の順でフォールバック
+    result = None
     try:
         result = await generate(user_prompt, system=system, model=MODEL_SONNET)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"スライド生成に失敗しました: {e}")
+        logger.info(f"Azure LLM unavailable, trying Gemini fallback: {e}")
+        if is_gemini_available():
+            try:
+                result = await gemini_generate_text(user_prompt, system=system)
+            except Exception as e2:
+                raise HTTPException(status_code=502, detail=f"スライド生成に失敗しました: {e2}")
+        else:
+            raise HTTPException(status_code=502, detail=f"スライド生成に失敗しました: {e}")
 
     # JSONパース試行
     try:
@@ -130,10 +139,18 @@ JSON形式で出力:
 
     user_prompt = f"トピック「{body.topic}」の音声解説スクリプトを作成してください。"
 
+    result = None
     try:
         result = await generate(user_prompt, system=system, model=MODEL_SONNET)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"音声スクリプト生成に失敗しました: {e}")
+        logger.info(f"Azure LLM unavailable for audio, trying Gemini fallback: {e}")
+        if is_gemini_available():
+            try:
+                result = await gemini_generate_text(user_prompt, system=system)
+            except Exception as e2:
+                raise HTTPException(status_code=502, detail=f"音声スクリプト生成に失敗しました: {e2}")
+        else:
+            raise HTTPException(status_code=502, detail=f"音声スクリプト生成に失敗しました: {e}")
 
     try:
         if "```" in result:
