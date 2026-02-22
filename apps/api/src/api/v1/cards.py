@@ -39,7 +39,7 @@ async def get_due_cards(
         stmt = select(Card).where(~Card.id.in_(existing_subq))
         if course_id:
             stmt = stmt.where(Card.course_id == course_id)
-        stmt = stmt.order_by(Card.sort_order, Card.created_at).limit(limit)
+        stmt = stmt.order_by(Card.created_at).limit(limit)
         new_cards = (await db.execute(stmt)).scalars().all()
 
         for card in new_cards:

@@ -1,10 +1,13 @@
 """模擬試験エンドポイントのテスト"""
 
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
 
-async def _register_and_login(client: AsyncClient, email: str) -> str:
+async def _register_and_login(client: AsyncClient, email: str | None = None) -> str:
+    email = email or f"mock_{uuid.uuid4().hex[:8]}@test.com"
     """ヘルパー: ユーザー登録+ログインしてトークンを返す"""
     await client.post(
         "/api/v1/auth/register",
@@ -48,7 +51,7 @@ async def test_get_exam_config(client: AsyncClient):
 @pytest.mark.integration
 async def test_submit_mock_exam(client: AsyncClient, seed_courses):
     """模擬試験結果の保存"""
-    token = await _register_and_login(client, "mockexam1@example.com")
+    token = await _register_and_login(client)
     cia_id = await _get_course_id(client, "CIA")
 
     resp = await client.post(
@@ -98,7 +101,7 @@ async def test_submit_mock_exam_unauthenticated(client: AsyncClient):
 @pytest.mark.integration
 async def test_get_mock_exam_history(client: AsyncClient, seed_courses):
     """模擬試験履歴取得"""
-    token = await _register_and_login(client, "mockexam2@example.com")
+    token = await _register_and_login(client)
     cia_id = await _get_course_id(client, "CIA")
 
     # 2件保存
@@ -134,7 +137,7 @@ async def test_get_mock_exam_history(client: AsyncClient, seed_courses):
 @pytest.mark.integration
 async def test_get_mock_exam_history_filter(client: AsyncClient, seed_courses):
     """模擬試験履歴のコースフィルタ"""
-    token = await _register_and_login(client, "mockexam3@example.com")
+    token = await _register_and_login(client)
     cia_id = await _get_course_id(client, "CIA")
     cisa_id = await _get_course_id(client, "CISA")
 
