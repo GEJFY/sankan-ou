@@ -94,7 +94,12 @@ export default function MockExamPage() {
     const course = courseList.find((c) => c.code === selectedCourse);
     if (course) {
       apiFetch<{ topics: TopicInfo[] }>(`/courses/${course.id}/topics`)
-        .then((data) => setTopics(data.topics))
+        .then((data) => {
+          const unique = Array.from(
+            new Map(data.topics.map((t) => [t.name, t])).values()
+          );
+          setTopics(unique);
+        })
         .catch(() => setTopics([]));
     }
   }, [selectedCourse, courseList]);

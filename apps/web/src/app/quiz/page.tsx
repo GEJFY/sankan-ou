@@ -65,10 +65,13 @@ export default function QuizPage() {
     setSelectedTopic("");
     apiFetch<{ topics: Topic[] }>(`/courses/${selectedCourse}/topics`)
       .then((data) => {
-        setTopics(data.topics);
-        if (data.topics.length > 0) {
-          const idx = Math.floor(Math.random() * data.topics.length);
-          setSelectedTopic(data.topics[idx].id);
+        const unique = Array.from(
+          new Map(data.topics.map((t) => [t.name, t])).values()
+        );
+        setTopics(unique);
+        if (unique.length > 0) {
+          const idx = Math.floor(Math.random() * unique.length);
+          setSelectedTopic(unique[idx].id);
         }
       })
       .catch(() => {});
