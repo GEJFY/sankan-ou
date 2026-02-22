@@ -109,6 +109,9 @@ export default function SynergyPage() {
           <p className="text-gray-500 mt-1">
             資格共通テーマで横断的に学習
           </p>
+          <p className="text-xs text-gray-600 mt-2">
+            CIA/CISA/CFEに共通するテーマ（リスク管理、内部統制、ガバナンス等）のカードをまとめて学習。一度の学習で複数資格の知識を同時に強化できます。
+          </p>
         </div>
 
         {/* シナジー領域タグ */}

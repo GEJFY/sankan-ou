@@ -97,6 +97,30 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* はじめにガイド（データがない場合） */}
+        {dashboard && dashboard.courses.length === 0 && (
+          <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-cyan-900/30 border border-blue-800/50 rounded-2xl p-6 space-y-4">
+            <h2 className="text-lg font-semibold">はじめに</h2>
+            <p className="text-sm text-gray-300">
+              GRC Triple Crown へようこそ！以下の順序で学習を進めましょう。
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {[
+                { step: "1", label: "設定", desc: "学習したい資格を登録", href: "/settings" },
+                { step: "2", label: "SRS学習", desc: "フラッシュカードで基礎知識を記憶", href: "/study" },
+                { step: "3", label: "問題演習", desc: "トピック別の問題で実力チェック", href: "/quiz" },
+                { step: "4", label: "模擬試験", desc: "本番形式で合格力を測定", href: "/mock-exam" },
+              ].map((s) => (
+                <a key={s.step} href={s.href} className="bg-gray-800/50 rounded-xl p-4 hover:bg-gray-700/50 transition group">
+                  <div className="text-blue-400 font-bold text-lg mb-1">Step {s.step}</div>
+                  <div className="text-sm font-semibold text-gray-200 group-hover:text-white">{s.label}</div>
+                  <div className="text-xs text-gray-500 mt-1">{s.desc}</div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 資格プログレスリング */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {dashboard?.courses.map((course) => (
@@ -123,7 +147,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 合格確率予測 */}
-        {dashboard && dashboard.courses.length > 0 && (
+        {dashboard && dashboard.courses.length > 0 && dashboard.courses.some(c => c.total_cards > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {dashboard.courses.map((course) => (
               <PassProbability
@@ -145,7 +169,7 @@ export default function DashboardPage() {
         {/* 最近の模擬試験 */}
         {mockExams.length > 0 && (
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold mb-4">最近の模擬試験</h2>
+            <h2 className="text-lg font-semibold mb-4" title="過去に受験した模擬試験のスコアと合否結果">最近の模擬試験</h2>
             <div className="space-y-2">
               {mockExams.map((exam) => (
                 <div

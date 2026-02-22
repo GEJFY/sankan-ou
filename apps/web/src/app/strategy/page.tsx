@@ -106,6 +106,17 @@ export default function StrategyPage() {
           </p>
         </div>
 
+        {/* 目的説明 */}
+        <div className="bg-blue-900/20 border border-blue-800/40 rounded-xl p-4 text-sm text-gray-300 space-y-2">
+          <p>
+            <strong className="text-blue-400">このページの目的：</strong>
+            学習データを基に各資格の合格確率・予測スコアを算出し、最も効率的な受験順序と学習時間配分を提案します。
+          </p>
+          <p className="text-xs text-gray-500">
+            合格確率が高い資格から順に受験することで、合格実績がモチベーションとなり、資格間のシナジー効果（共通知識の活用）も最大化できます。
+          </p>
+        </div>
+
         {/* 推奨受験順序 */}
         <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
           <h2 className="text-lg font-semibold">推奨受験順序</h2>
@@ -184,7 +195,7 @@ export default function StrategyPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div className="bg-gray-800 rounded-lg p-3">
+              <div className="bg-gray-800 rounded-lg p-3" title="現在の学習データから算出した本試験の合格確率">
                 <div className="text-gray-500">合格確率</div>
                 <div
                   className="text-xl font-bold"
@@ -193,19 +204,19 @@ export default function StrategyPage() {
                   {Math.round(s.prediction?.pass_probability ?? 0)}%
                 </div>
               </div>
-              <div className="bg-gray-800 rounded-lg p-3">
+              <div className="bg-gray-800 rounded-lg p-3" title="SRSカードの習得率と正答率から予測した試験スコア">
                 <div className="text-gray-500">予測スコア</div>
                 <div className="text-xl font-bold">
                   {s.prediction?.predicted_score ?? 0}点
                 </div>
               </div>
-              <div className="bg-gray-800 rounded-lg p-3">
+              <div className="bg-gray-800 rounded-lg p-3" title="未習得カードを全て学習するのに必要な推定時間">
                 <div className="text-gray-500">残り学習時間</div>
                 <div className="text-xl font-bold">
                   {s.roi?.estimated_hours_remaining ?? 0}h
                 </div>
               </div>
-              <div className="bg-gray-800 rounded-lg p-3">
+              <div className="bg-gray-800 rounded-lg p-3" title="全カードのうち習得済みカードの割合">
                 <div className="text-gray-500">進捗</div>
                 <div className="text-xl font-bold">
                   {s.roi

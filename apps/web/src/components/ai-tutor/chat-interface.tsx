@@ -11,12 +11,12 @@ interface Message {
 
 type TutorMode = "chat" | "explain" | "compare" | "socratic" | "bridge";
 
-const MODES: { value: TutorMode; label: string; desc: string }[] = [
-  { value: "chat", label: "Q&A", desc: "自由に質問" },
-  { value: "explain", label: "解説", desc: "レベル別解説" },
-  { value: "compare", label: "比較", desc: "3資格比較表" },
-  { value: "socratic", label: "ソクラテス式", desc: "対話で理解深化" },
-  { value: "bridge", label: "ブリッジ", desc: "資格間の橋渡し" },
+const MODES: { value: TutorMode; label: string; desc: string; detail: string }[] = [
+  { value: "chat", label: "Q&A", desc: "自由に質問", detail: "GRC分野の疑問に何でも回答します" },
+  { value: "explain", label: "解説", desc: "レベル別解説", detail: "初心者〜専門家まで6段階のレベルで概念を解説" },
+  { value: "compare", label: "比較", desc: "3資格比較表", detail: "CIA/CISA/CFEでの概念の違いを比較表で整理" },
+  { value: "socratic", label: "ソクラテス式", desc: "対話で理解深化", detail: "問答形式で考えを深め、理解を確認" },
+  { value: "bridge", label: "ブリッジ", desc: "資格間の橋渡し", detail: "ある資格の知識を別の資格に応用する方法を解説" },
 ];
 
 export default function ChatInterface() {
@@ -138,7 +138,7 @@ export default function ChatInterface() {
                 ? "bg-blue-600 text-white"
                 : "bg-gray-800 text-gray-400 hover:bg-gray-700"
             }`}
-            title={m.desc}
+            title={m.detail}
           >
             {m.label}
           </button>
