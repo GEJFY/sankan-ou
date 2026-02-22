@@ -1,4 +1,4 @@
-"""Google Gemini client - スライド生成用"""
+"""Google Gemini client - Vertex AI / Direct API 両対応"""
 
 import base64
 import logging
@@ -12,11 +12,22 @@ logger = logging.getLogger(__name__)
 
 
 def _get_client() -> genai.Client:
-    if not settings.google_gemini_api_key:
-        raise ValueError(
-            "Google Gemini API key not configured. Set GOOGLE_GEMINI_API_KEY environment variable."
+    """Gemini クライアントを取得。Vertex AI優先、フォールバックで直接API。"""
+    if settings.google_gemini_project:
+        # Vertex AI モード (Application Default Credentials)
+        return genai.Client(
+            vertexai=True,
+            project=settings.google_gemini_project,
+            location=settings.google_gemini_location,
         )
-    return genai.Client(api_key=settings.google_gemini_api_key)
+    elif settings.google_gemini_api_key:
+        # 直接 API キーモード
+        return genai.Client(api_key=settings.google_gemini_api_key)
+    else:
+        raise ValueError(
+            "Google Gemini not configured. Set GOOGLE_GEMINI_PROJECT (Vertex AI) "
+            "or GOOGLE_GEMINI_API_KEY (Direct API)."
+        )
 
 
 async def generate_slide_image(
@@ -54,7 +65,7 @@ async def generate_slide_image(
 
     try:
         response = client.models.generate_content(
-            model=settings.google_gemini_model,
+            model=settings.google_gemini_image_model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"],
@@ -84,7 +95,6 @@ async def generate_text(prompt: str, system: str = "") -> str:
     """Gemini でテキスト生成（フォールバック用）"""
     client = _get_client()
 
-    contents = prompt
     config = types.GenerateContentConfig()
     if system:
         config = types.GenerateContentConfig(system_instruction=system)
@@ -92,7 +102,7 @@ async def generate_text(prompt: str, system: str = "") -> str:
     try:
         response = client.models.generate_content(
             model=settings.google_gemini_model,
-            contents=contents,
+            contents=prompt,
             config=config,
         )
         return response.text or ""
@@ -102,5 +112,5 @@ async def generate_text(prompt: str, system: str = "") -> str:
 
 
 def is_gemini_available() -> bool:
-    """Gemini APIキーが設定されているかチェック"""
-    return bool(settings.google_gemini_api_key)
+    """Gemini が利用可能かチェック"""
+    return bool(settings.google_gemini_project or settings.google_gemini_api_key)

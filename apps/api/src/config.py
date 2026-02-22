@@ -35,9 +35,12 @@ class Settings(BaseSettings):
     llm_model_generation: str = "gpt-5-mini"
     llm_model_chat: str = "gpt-5-nano"
 
-    # Google Gemini (スライド生成用)
-    google_gemini_api_key: str = ""
-    google_gemini_model: str = "gemini-2.5-flash"
+    # Google Gemini (Vertex AI 経由)
+    google_gemini_api_key: str = ""  # 直接API用（空ならVertex AI ADCを使用）
+    google_gemini_project: str = ""  # GCPプロジェクトID (Vertex AI用)
+    google_gemini_location: str = "us-central1"  # Vertex AIリージョン
+    google_gemini_model: str = "gemini-2.5-flash"  # テキスト生成用
+    google_gemini_image_model: str = "gemini-2.5-flash-image"  # 画像生成用
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3001"]
