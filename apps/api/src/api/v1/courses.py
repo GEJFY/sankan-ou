@@ -1,6 +1,6 @@
 """Course endpoints"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
 from src.deps import DbSession
@@ -36,7 +36,9 @@ async def get_course(course_id: str, db: DbSession) -> CourseOut:
     """コース詳細取得"""
     stmt = select(Course).where(Course.id == course_id)
     result = await db.execute(stmt)
-    course = result.scalar_one()
+    course = result.scalar_one_or_none()
+    if course is None:
+        raise HTTPException(status_code=404, detail="Course not found")
     return CourseOut.model_validate(course)
 
 

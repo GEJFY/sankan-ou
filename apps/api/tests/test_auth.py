@@ -1,5 +1,7 @@
 """認証エンドポイントのテスト"""
 
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
@@ -7,17 +9,18 @@ from httpx import AsyncClient
 @pytest.mark.integration
 async def test_register_success(client: AsyncClient):
     """正常なユーザー登録"""
+    email = f"reg_{uuid.uuid4().hex[:8]}@example.com"
     resp = await client.post(
         "/api/v1/auth/register",
         json={
-            "email": "test@example.com",
+            "email": email,
             "password": "testpass123",
             "display_name": "Test User",
         },
     )
     assert resp.status_code == 201
     data = resp.json()
-    assert data["email"] == "test@example.com"
+    assert data["email"] == email
     assert data["display_name"] == "Test User"
     assert data["role"] == "learner"
     assert "id" in data
@@ -26,8 +29,9 @@ async def test_register_success(client: AsyncClient):
 @pytest.mark.integration
 async def test_register_duplicate_email(client: AsyncClient):
     """重複メールアドレスで登録失敗"""
+    email = f"dup_{uuid.uuid4().hex[:8]}@example.com"
     payload = {
-        "email": "dup@example.com",
+        "email": email,
         "password": "testpass123",
         "display_name": "User 1",
     }
