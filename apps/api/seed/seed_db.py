@@ -545,7 +545,20 @@ async def seed_courses_and_topics(db: AsyncSession) -> dict[str, uuid.UUID]:
 
         course_ids[data["code"]] = course.id
 
-        # トピック作成
+        # トピック作成（既存トピックがあればスキップ）
+        existing_topics = await db.execute(
+            select(Topic).where(Topic.course_id == course.id).limit(1)
+        )
+        if existing_topics.scalar_one_or_none() is not None:
+            # 既存トピックのマッピングを構築
+            all_topics = await db.execute(
+                select(Topic).where(Topic.course_id == course.id)
+            )
+            for t in all_topics.scalars().all():
+                if t.level >= 1:
+                    topic_map[f"{data['code']}::{t.name}"] = t.id
+            continue
+
         sort_order = 0
         for part in data["topics"]:
             parent_topic = Topic(

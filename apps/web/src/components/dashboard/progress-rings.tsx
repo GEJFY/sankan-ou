@@ -22,7 +22,7 @@ export default function ProgressRing({
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 flex flex-col items-center gap-4">
+    <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 flex flex-col items-center gap-4">
       {/* Ring */}
       <div className="relative w-24 h-24">
         <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
@@ -30,7 +30,7 @@ export default function ProgressRing({
             cx="50"
             cy="50"
             r="40"
-            stroke="#1f2937"
+            stroke="#27272a"
             strokeWidth="8"
             fill="none"
           />
@@ -48,14 +48,14 @@ export default function ProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold">{Math.round(progress)}%</span>
+          <span className="text-lg font-bold text-zinc-200 tabular-nums">{Math.round(progress)}%</span>
         </div>
       </div>
 
       {/* Label */}
       <div className="text-center">
         <span
-          className="inline-block px-3 py-1 rounded-full text-xs font-bold text-white"
+          className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold text-white"
           style={{ backgroundColor: color }}
         >
           {courseCode}
@@ -63,22 +63,25 @@ export default function ProgressRing({
       </div>
 
       {/* Stats */}
-      <div className="text-sm text-gray-400 space-y-1 w-full">
-        <div className="flex justify-between">
+      <div className="text-sm text-zinc-500 space-y-1 w-full">
+        <div className="flex justify-between tooltip-trigger">
           <span>習得</span>
-          <span>
+          <span className="text-zinc-300 tabular-nums">
             {mastered}/{totalCards}
           </span>
+          <span className="tooltip-content">FSRS評価でGood以上を獲得し、習得と判定されたカード数</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between tooltip-trigger">
           <span>本日復習</span>
-          <span>{dueToday}枚</span>
+          <span className="text-zinc-300 tabular-nums">{dueToday}枚</span>
+          <span className="tooltip-content">FSRSが算出した今日復習すべきカード数</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between tooltip-trigger">
           <span>合格確率</span>
-          <span className="font-semibold" style={{ color }}>
+          <span className="font-semibold tabular-nums" style={{ color }}>
             {Math.round(passProbability * 100)}%
           </span>
+          <span className="tooltip-content">カード習得率と正答率から算出した合格確率の予測値</span>
         </div>
       </div>
     </div>

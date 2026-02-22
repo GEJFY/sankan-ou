@@ -4,11 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { COURSE_COLORS } from "@/lib/constants";
+import {
+  LayoutDashboard,
+  BookOpen,
+  GitMerge,
+  PenLine,
+  FileCheck2,
+  MessageSquareText,
+  Presentation,
+  Trophy,
+  Target,
+  Settings,
+  ShieldCheck,
+  LogOut,
+  Info,
+  type LucideIcon,
+} from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   desc: string;
 }
 
@@ -21,36 +37,36 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "",
     items: [
-      { href: "/", label: "ダッシュボード", icon: "📊", desc: "学習進捗と合格確率の全体概要" },
+      { href: "/", label: "ダッシュボード", icon: LayoutDashboard, desc: "学習進捗と合格確率の全体概要" },
     ],
   },
   {
     title: "学習",
     items: [
-      { href: "/study", label: "SRS学習", icon: "📚", desc: "間隔反復でカードを効率的に記憶定着" },
-      { href: "/synergy", label: "シナジー学習", icon: "🔗", desc: "CIA/CISA/CFE共通テーマを横断学習" },
-      { href: "/quiz", label: "問題演習", icon: "✍️", desc: "トピック別の四肢択一問題で実力確認" },
-      { href: "/mock-exam", label: "模擬試験", icon: "📝", desc: "本番形式の模擬試験で合格力を測定" },
+      { href: "/study", label: "SRS学習", icon: BookOpen, desc: "間隔反復（FSRS）でカードを効率的に記憶定着。復習タイミングをAIが最適化します" },
+      { href: "/synergy", label: "シナジー学習", icon: GitMerge, desc: "CIA/CISA/CFEの共通テーマ（リスク管理・内部統制等）を横断学習。一度の学習で複数資格の知識を強化" },
+      { href: "/quiz", label: "問題演習", icon: PenLine, desc: "トピック別の四肢択一問題。DB保存済み問題を優先し、不足分はAIが自動生成します" },
+      { href: "/mock-exam", label: "模擬試験", icon: FileCheck2, desc: "各資格の本番形式（パート構成・問題数・時間配分）に準拠した模擬試験" },
     ],
   },
   {
     title: "ツール",
     items: [
-      { href: "/tutor", label: "AI Tutor", icon: "🤖", desc: "AI講師に自由に質問・概念を深掘り" },
-      { href: "/media", label: "スライド/音声", icon: "🎧", desc: "AIでスライドや音声教材を自動生成" },
+      { href: "/tutor", label: "AI Tutor", icon: MessageSquareText, desc: "5つのモード（解説・演習・FAQ・用語・ケース分析）でAI講師に質問" },
+      { href: "/media", label: "スライド/音声", icon: Presentation, desc: "カテゴリを選択してAIがスライドや音声学習教材を自動生成" },
     ],
   },
   {
     title: "分析",
     items: [
-      { href: "/achievements", label: "実績", icon: "🏆", desc: "バッジやXPで学習のモチベーション管理" },
-      { href: "/strategy", label: "受験戦略", icon: "🎯", desc: "3資格の最適受験順序と学習配分を提案" },
+      { href: "/achievements", label: "実績", icon: Trophy, desc: "XP・バッジ・デイリーミッションで学習モチベーションを管理" },
+      { href: "/strategy", label: "受験戦略", icon: Target, desc: "学習データから合格確率を予測し、最適な受験順序と時間配分を提案" },
     ],
   },
   {
     title: "",
     items: [
-      { href: "/settings", label: "設定", icon: "⚙️", desc: "コース登録・学習アルゴリズム設定" },
+      { href: "/settings", label: "設定", icon: Settings, desc: "コース登録・目標記憶率・パスワード変更" },
     ],
   },
 ];
@@ -60,35 +76,61 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 min-h-screen p-4 flex flex-col">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold">GRC Triple Crown</h1>
-        <p className="text-xs text-gray-500 mt-1">三冠王</p>
+    <aside className="w-[260px] bg-zinc-950 border-r border-zinc-800/60 min-h-screen flex flex-col">
+      {/* Logo area */}
+      <div className="px-5 pt-6 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <span className="text-white font-bold text-sm tracking-tight">GRC</span>
+          </div>
+          <div>
+            <h1 className="text-[15px] font-semibold tracking-tight text-zinc-100">
+              Triple Crown
+            </h1>
+            <p className="text-[10px] text-zinc-500 tracking-wide">三冠王 — CIA / CISA / CFE</p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <div className="w-full h-px bg-zinc-800/60" />
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {NAV_GROUPS.map((group, gi) => (
           <div key={gi}>
             {group.title && (
-              <div className="text-[10px] uppercase tracking-wider text-gray-600 font-semibold px-3 pt-4 pb-1">
+              <div className="text-[10px] uppercase tracking-[0.08em] text-zinc-600 font-medium px-3 pt-5 pb-1.5">
                 {group.title}
               </div>
             )}
             {group.items.map((item) => {
               const isActive = pathname === item.href;
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  title={item.desc}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                     isActive
-                      ? "bg-blue-600/20 text-blue-400"
-                      : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                      ? "bg-zinc-800/80 text-zinc-100"
+                      : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40"
                   }`}
                 >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
+                  <Icon
+                    size={16}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    className={`flex-shrink-0 transition-colors ${
+                      isActive ? "text-blue-400" : "text-zinc-600 group-hover:text-zinc-400"
+                    }`}
+                  />
+                  <span className="flex-1">{item.label}</span>
+                  <span className="tooltip-trigger">
+                    <Info
+                      size={12}
+                      className="text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-help"
+                    />
+                    <span className="tooltip-content">{item.desc}</span>
+                  </span>
                 </Link>
               );
             })}
@@ -97,46 +139,64 @@ export default function Sidebar() {
 
         {user?.role === "admin" && (
           <>
-            <div className="my-2 border-t border-gray-800" />
+            <div className="my-2 mx-3 h-px bg-zinc-800/60" />
             <Link
               href="/admin"
-              title="ユーザー管理・システム設定"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                 pathname === "/admin"
-                  ? "bg-purple-600/20 text-purple-400"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                  ? "bg-zinc-800/80 text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40"
               }`}
             >
-              <span>{"🛡️"}</span>
+              <ShieldCheck
+                size={16}
+                strokeWidth={pathname === "/admin" ? 2 : 1.5}
+                className={pathname === "/admin" ? "text-purple-400" : "text-zinc-600 group-hover:text-zinc-400"}
+              />
               <span>管理画面</span>
             </Link>
           </>
         )}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-gray-800 space-y-3">
+      {/* Footer */}
+      <div className="px-4 pb-4 space-y-3">
+        <div className="h-px bg-zinc-800/60" />
+
         {user && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 truncate">{user.display_name}</span>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-medium text-zinc-400">
+                {user.display_name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+              <span className="text-xs text-zinc-500 truncate max-w-[120px]">
+                {user.display_name}
+              </span>
+            </div>
             <button
               onClick={logout}
-              className="text-xs text-gray-500 hover:text-red-400 transition"
+              title="ログアウト"
+              className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800/60 transition"
             >
-              ログアウト
+              <LogOut size={14} />
             </button>
           </div>
         )}
-        <div className="flex gap-2">
+
+        {/* Course indicator dots */}
+        <div className="flex items-center gap-3 px-1">
           {Object.entries(COURSE_COLORS).map(([code, color]) => (
-            <span
-              key={code}
-              className="w-3 h-3 rounded-full"
-              title={code}
-              style={{ backgroundColor: color }}
-            />
+            <div key={code} className="flex items-center gap-1.5" title={code}>
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-[10px] text-zinc-600">{code}</span>
+            </div>
           ))}
         </div>
-        <p className="text-xs text-gray-600">v0.5.0</p>
+
+        <p className="text-[10px] text-zinc-700 px-1">v0.5.0</p>
       </div>
     </aside>
   );

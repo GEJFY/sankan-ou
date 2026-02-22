@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
+import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
+import { Plus, Trash2, Save } from "lucide-react";
 
 interface Enrollment {
   id: string;
@@ -142,8 +144,8 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-gray-400 animate-pulse">読み込み中...</div>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-zinc-500 text-sm animate-pulse">読み込み中...</div>
         </div>
       </AppLayout>
     );
@@ -152,47 +154,48 @@ export default function SettingsPage() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">設定</h1>
-          <p className="text-gray-500 mt-1">コース登録・学習設定</p>
-        </div>
+        <PageHeader
+          title="設定"
+          description="コース登録・学習設定"
+          tooltip="学習する資格の登録・解除、目標記憶率の調整、パスワード変更を行います。"
+        />
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-red-300 text-sm">
+          <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-3 text-red-400 text-sm">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-3 text-blue-300 text-sm">
+          <div className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-3 text-blue-400 text-sm">
             {message}
           </div>
         )}
 
-        {/* 登録済みコース */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h2 className="text-lg font-semibold mb-4">登録コース</h2>
-          <div className="space-y-4">
+        {/* Enrolled courses */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+          <h2 className="text-base font-semibold text-zinc-200 mb-4">登録コース</h2>
+          <div className="space-y-3">
             {enrollments
               .filter((e) => e.is_active)
               .map((enrollment) => (
                 <div
                   key={enrollment.id}
                   className="rounded-xl border p-4 flex items-center justify-between"
-                  style={{ borderColor: enrollment.course_color + "60" }}
+                  style={{ borderColor: enrollment.course_color + "30" }}
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="px-2 py-1 rounded text-xs font-bold text-white"
+                      className="px-2 py-1 rounded text-[11px] font-semibold text-white"
                       style={{ backgroundColor: enrollment.course_color }}
                     >
                       {enrollment.course_code}
                     </span>
                     <div>
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium text-zinc-200">
                         {enrollment.course_name}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-[11px] text-zinc-600">
                         登録日:{" "}
                         {new Date(enrollment.enrolled_at).toLocaleDateString(
                           "ja-JP"
@@ -202,8 +205,8 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <label className="text-xs text-gray-500 block">
+                    <div className="text-right tooltip-trigger">
+                      <label className="text-[11px] text-zinc-600 block">
                         目標記憶率
                       </label>
                       <select
@@ -214,57 +217,60 @@ export default function SettingsPage() {
                             parseFloat(e.target.value)
                           )
                         }
-                        className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm"
+                        className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-300 focus:outline-none focus:border-blue-500/60"
                       >
                         <option value={0.8}>80%</option>
                         <option value={0.85}>85%</option>
                         <option value={0.9}>90% (推奨)</option>
                         <option value={0.95}>95%</option>
                       </select>
+                      <span className="tooltip-content">復習時に正しく思い出せる確率の目標値。高いほど復習頻度が上がります。</span>
                     </div>
                     <button
                       onClick={() => handleUnenroll(enrollment.id)}
-                      className="text-xs text-red-400 hover:text-red-300 px-2 py-1"
+                      className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition"
+                      title="登録解除"
                     >
-                      解除
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
               ))}
 
             {enrollments.filter((e) => e.is_active).length === 0 && (
-              <p className="text-gray-500 text-sm text-center py-4">
+              <p className="text-zinc-600 text-sm text-center py-4">
                 まだコースに登録されていません
               </p>
             )}
           </div>
         </div>
 
-        {/* 未登録コース */}
+        {/* Available courses */}
         {courses.filter((c) => !enrolledCourseIds.has(c.id)).length > 0 && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold mb-4">利用可能なコース</h2>
-            <div className="space-y-3">
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+            <h2 className="text-base font-semibold text-zinc-200 mb-4">利用可能なコース</h2>
+            <div className="space-y-2">
               {courses
                 .filter((c) => !enrolledCourseIds.has(c.id))
                 .map((course) => (
                   <div
                     key={course.id}
-                    className="rounded-xl border border-gray-700 p-4 flex items-center justify-between"
+                    className="rounded-xl border border-zinc-700/40 p-4 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className="px-2 py-1 rounded text-xs font-bold text-white"
+                        className="px-2 py-1 rounded text-[11px] font-semibold text-white"
                         style={{ backgroundColor: course.color }}
                       >
                         {course.code}
                       </span>
-                      <span className="text-sm">{course.name}</span>
+                      <span className="text-sm text-zinc-300">{course.name}</span>
                     </div>
                     <button
                       onClick={() => handleEnroll(course.id)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors"
                     >
+                      <Plus size={14} />
                       登録
                     </button>
                   </div>
@@ -273,16 +279,16 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* パスワード変更 */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h2 className="text-lg font-semibold mb-4">パスワード変更</h2>
+        {/* Password change */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+          <h2 className="text-base font-semibold text-zinc-200 mb-4">パスワード変更</h2>
           {passwordMessage && (
-            <div className="bg-green-900/30 border border-green-800 rounded-lg p-3 text-green-300 text-sm mb-4">
+            <div className="bg-emerald-950/30 border border-emerald-800/30 rounded-lg p-3 text-emerald-400 text-sm mb-4">
               {passwordMessage}
             </div>
           )}
           {passwordError && (
-            <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-red-300 text-sm mb-4">
+            <div className="bg-red-950/40 border border-red-900/60 rounded-lg p-3 text-red-400 text-sm mb-4">
               {passwordError}
             </div>
           )}
@@ -292,45 +298,46 @@ export default function SettingsPage() {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="現在のパスワード"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
             />
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="新しいパスワード（8文字以上）"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
             />
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="新しいパスワード（確認）"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
             />
             <button
               onClick={handleChangePassword}
               disabled={!currentPassword || !newPassword || !confirmPassword}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm disabled:opacity-50 transition-colors"
             >
+              <Save size={14} />
               パスワードを変更
             </button>
           </div>
         </div>
 
-        {/* FSRS設定説明 */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h2 className="text-lg font-semibold mb-3">学習アルゴリズムについて</h2>
-          <div className="space-y-3 text-sm text-gray-400">
+        {/* FSRS explanation */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+          <h2 className="text-base font-semibold text-zinc-200 mb-3">学習アルゴリズムについて</h2>
+          <div className="space-y-3 text-sm text-zinc-500">
             <p>
               本アプリはFSRS（Free Spaced Repetition Scheduler）を使用しています。
             </p>
-            <div className="bg-gray-800 rounded-lg p-4 space-y-2">
+            <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-4 space-y-2">
               <p>
-                <strong className="text-gray-200">目標記憶率</strong>:
+                <strong className="text-zinc-300">目標記憶率</strong>:
                 復習時に正しく思い出せる確率の目標値
               </p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
+              <ul className="list-disc list-inside space-y-1 text-xs text-zinc-500">
                 <li>80%: 復習頻度低。忙しい方向け</li>
                 <li>85%: バランス型</li>
                 <li>90%: 推奨値。確実な定着を目指す</li>

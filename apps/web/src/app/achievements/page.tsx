@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
+import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
+import { Award, CheckCircle2, ClipboardList } from "lucide-react";
 
 interface Mission {
   id: string;
@@ -71,8 +73,8 @@ export default function AchievementsPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-gray-400 animate-pulse">読み込み中...</div>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-zinc-500 text-sm animate-pulse">読み込み中...</div>
         </div>
       </AppLayout>
     );
@@ -81,7 +83,7 @@ export default function AchievementsPage() {
   if (!profile) {
     return (
       <AppLayout>
-        <div className="text-center text-gray-400 py-20">
+        <div className="text-center text-zinc-500 py-20 text-sm">
           プロフィールの読み込みに失敗しました
         </div>
       </AppLayout>
@@ -98,55 +100,56 @@ export default function AchievementsPage() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">実績 / ゲーミフィケーション</h1>
-          <p className="text-gray-500 mt-1">XP・バッジ・デイリーミッション</p>
-        </div>
+        <PageHeader
+          title="実績"
+          description="XP・バッジ・デイリーミッション"
+          tooltip="学習するとXP（経験値）が獲得でき、レベルが上がります。デイリーミッションの達成やバッジ解放でモチベーションを維持しましょう。"
+        />
 
-        {/* XPとレベル */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+        {/* XP and Level */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-2xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-xl font-bold text-white">
                 {profile.level}
               </div>
               <div>
-                <div className="text-sm text-gray-400">レベル {profile.level}</div>
-                <div className="text-2xl font-bold">
+                <div className="text-xs text-zinc-500">レベル {profile.level}</div>
+                <div className="text-xl font-bold text-zinc-200 tabular-nums">
                   {profile.total_xp.toLocaleString()} XP
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-gray-500">次のレベルまで</div>
-              <div className="text-lg font-semibold text-yellow-400">
+              <div className="text-[11px] text-zinc-600">次のレベルまで</div>
+              <div className="text-base font-semibold text-amber-400 tabular-nums">
                 {profile.xp_to_next.toLocaleString()} XP
               </div>
             </div>
           </div>
 
-          {/* XP進捗バー */}
-          <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+          {/* XP progress bar */}
+          <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all"
               style={{ width: `${Math.min(100, profile.xp_progress_pct)}%` }}
             />
           </div>
-          <div className="text-xs text-gray-500 mt-1 text-right">
+          <div className="text-[11px] text-zinc-600 mt-1 text-right tabular-nums">
             {Math.round(profile.xp_progress_pct)}%
           </div>
 
-          {/* 資格別XP */}
+          {/* Per-course XP */}
           <div className="mt-4 grid grid-cols-3 gap-3">
             {(["CIA", "CISA", "CFE"] as const).map((code) => (
               <div key={code} className="space-y-1">
-                <div className="flex justify-between text-xs">
+                <div className="flex justify-between text-[11px]">
                   <span style={{ color: COURSE_COLORS[code] }}>{code}</span>
-                  <span className="text-gray-500">
+                  <span className="text-zinc-600 tabular-nums">
                     {profile.course_xp[code].toLocaleString()} XP
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-gray-800 rounded-full">
+                <div className="w-full h-1 bg-zinc-800 rounded-full">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -160,56 +163,61 @@ export default function AchievementsPage() {
           </div>
         </div>
 
-        {/* デイリーミッション */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            今日のミッション
-            <span className="ml-2 text-sm text-gray-500">
+        {/* Daily missions */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList size={16} className="text-zinc-500" />
+            <h2 className="text-base font-semibold text-zinc-200">
+              今日のミッション
+            </h2>
+            <span className="text-xs text-zinc-600 tabular-nums">
               {profile.daily_missions.filter((m) => m.is_completed).length}/
               {profile.daily_missions.length} 完了
             </span>
-          </h2>
-          <div className="space-y-3">
+          </div>
+          <div className="space-y-2.5">
             {profile.daily_missions.map((mission) => (
               <div
                 key={mission.id}
                 className={`rounded-xl border p-4 ${
                   mission.is_completed
-                    ? "border-green-800 bg-green-900/20"
-                    : "border-gray-700 bg-gray-800"
+                    ? "border-emerald-800/30 bg-emerald-950/20"
+                    : "border-zinc-700/40 bg-zinc-800/40"
                 }`}
               >
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">
-                      {mission.is_completed ? "✅" : "📋"}
-                    </span>
+                    {mission.is_completed ? (
+                      <CheckCircle2 size={16} className="text-emerald-400" />
+                    ) : (
+                      <ClipboardList size={16} className="text-zinc-600" />
+                    )}
                     <span
                       className={`text-sm font-medium ${
                         mission.is_completed
-                          ? "text-green-400 line-through"
-                          : "text-gray-200"
+                          ? "text-emerald-400 line-through"
+                          : "text-zinc-300"
                       }`}
                     >
                       {mission.title}
                     </span>
                   </div>
-                  <span className="text-xs text-yellow-400 font-semibold">
+                  <span className="text-xs text-amber-400/80 font-medium tabular-nums">
                     +{mission.xp_reward} XP
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-gray-700 rounded-full">
+                  <div className="flex-1 h-1.5 bg-zinc-700 rounded-full">
                     <div
                       className={`h-full rounded-full transition-all ${
                         mission.is_completed
-                          ? "bg-green-500"
+                          ? "bg-emerald-500"
                           : "bg-blue-500"
                       }`}
                       style={{ width: `${mission.progress_pct}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-[11px] text-zinc-500 tabular-nums">
                     {mission.current}/{mission.target}
                   </span>
                 </div>
@@ -218,24 +226,27 @@ export default function AchievementsPage() {
           </div>
         </div>
 
-        {/* バッジコレクション */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            バッジコレクション
-            <span className="ml-2 text-sm text-gray-500">
+        {/* Badge collection */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Award size={16} className="text-zinc-500" />
+            <h2 className="text-base font-semibold text-zinc-200">
+              バッジコレクション
+            </h2>
+            <span className="text-xs text-zinc-600 tabular-nums">
               {profile.badge_count} 獲得
             </span>
-          </h2>
+          </div>
           {profile.badges.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {profile.badges.map((badge) => (
                 <div
                   key={badge.code}
-                  className="bg-gray-800 rounded-xl p-4 text-center space-y-2 border border-gray-700"
+                  className="bg-zinc-800/50 border border-zinc-700/40 rounded-xl p-4 text-center space-y-2"
                 >
-                  <div className="text-3xl">{badge.icon}</div>
-                  <div className="text-sm font-semibold">{badge.name}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-2xl">{badge.icon}</div>
+                  <div className="text-sm font-medium text-zinc-300">{badge.name}</div>
+                  <div className="text-[11px] text-zinc-600">
                     {new Date(badge.earned_at).toLocaleDateString("ja-JP")}
                   </div>
                 </div>
@@ -243,38 +254,38 @@ export default function AchievementsPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">🏅</div>
-              <p className="text-gray-400 text-sm">
+              <Award size={32} className="mx-auto text-zinc-700 mb-3" />
+              <p className="text-zinc-500 text-sm">
                 学習を進めてバッジを獲得しよう
               </p>
-              <p className="text-gray-600 text-xs mt-1">
+              <p className="text-zinc-600 text-xs mt-1">
                 カードレビュー、連続学習、シナジー学習で解放されます
               </p>
             </div>
           )}
         </div>
 
-        {/* XP履歴 */}
+        {/* XP history */}
         {xpHistory.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold mb-4">最近のXP獲得</h2>
-            <div className="space-y-2">
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+            <h2 className="text-base font-semibold text-zinc-200 mb-4">最近のXP獲得</h2>
+            <div className="space-y-1.5">
               {xpHistory.slice(0, 10).map((entry, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0"
+                  className="flex justify-between items-center py-2 border-b border-zinc-800/60 last:border-0"
                 >
                   <div>
-                    <span className="text-sm text-gray-300">
+                    <span className="text-sm text-zinc-400">
                       {entry.source.replace(/_/g, " ")}
                     </span>
                     {entry.detail && (
-                      <span className="ml-2 text-xs text-gray-500">
+                      <span className="ml-2 text-[11px] text-zinc-600">
                         {entry.detail}
                       </span>
                     )}
                   </div>
-                  <span className="text-sm font-semibold text-yellow-400">
+                  <span className="text-sm font-medium text-amber-400/80 tabular-nums">
                     +{entry.amount} XP
                   </span>
                 </div>

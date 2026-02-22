@@ -29,64 +29,68 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-950">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black mb-2">
-            <span style={{ color: "#e94560" }}>GRC</span>{" "}
-            <span className="text-white">Triple Crown</span>
-          </h1>
-          <p className="text-gray-400 text-sm">CIA / CISA / CFE 3資格同時学習</p>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm tracking-tight">GRC</span>
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
+              Triple Crown
+            </h1>
+          </div>
+          <p className="text-zinc-500 text-sm">CIA / CISA / CFE 3資格同時学習</p>
         </div>
 
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-700 bg-gray-900/80 p-8 space-y-5"
+          className="rounded-2xl border border-zinc-800/60 bg-zinc-900/50 p-8 space-y-5"
         >
-          <h2 className="text-xl font-bold text-white mb-1">新規登録</h2>
+          <h2 className="text-lg font-semibold text-zinc-200 mb-1">新規登録</h2>
 
           {error && (
-            <div className="rounded-lg bg-red-900/40 border border-red-700 px-4 py-2 text-red-300 text-sm">
+            <div className="rounded-xl bg-red-950/40 border border-red-900/60 px-4 py-2.5 text-red-400 text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">表示名</label>
+            <label className="block text-xs text-zinc-500 font-medium mb-1.5">表示名</label>
             <input
               type="text"
               required
               maxLength={100}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg bg-gray-800 border border-gray-600 px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-[#e94560] transition"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
               placeholder="あなたの名前"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">メールアドレス</label>
+            <label className="block text-xs text-zinc-500 font-medium mb-1.5">メールアドレス</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg bg-gray-800 border border-gray-600 px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-[#e94560] transition"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">パスワード</label>
+            <label className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード</label>
             <input
               type="password"
               required
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg bg-gray-800 border border-gray-600 px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-[#e94560] transition"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
               placeholder="8文字以上"
             />
           </div>
@@ -94,15 +98,14 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg py-2.5 font-bold text-white transition disabled:opacity-50"
-            style={{ background: "#e94560" }}
+            className="w-full rounded-xl py-2.5 font-medium text-sm text-white bg-blue-600 hover:bg-blue-500 transition-colors disabled:opacity-50"
           >
             {loading ? "登録中..." : "アカウント作成"}
           </button>
 
-          <p className="text-center text-sm text-gray-400">
+          <p className="text-center text-sm text-zinc-500">
             既にアカウントがある場合は{" "}
-            <Link href="/login" className="text-[#0891b2] hover:underline">
+            <Link href="/login" className="text-blue-400 hover:underline">
               ログイン
             </Link>
           </p>

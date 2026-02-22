@@ -39,16 +39,17 @@ export default function SynergyMap() {
   });
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
-      <h3 className="text-sm font-semibold text-gray-300">
+    <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-4">
+      <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger">
         シナジーマップ
+        <span className="tooltip-content">CIA/CISA/CFEに共通するテーマ領域の重複度を表示。重複率が高いほど、一度の学習で複数資格に効果的です。</span>
       </h3>
 
       {/* 資格コース概要 */}
       <div className="flex justify-center py-2">
         <div className="flex flex-wrap justify-center gap-3">
           {data.courses.map((c) => (
-            <div key={c.code} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-lg">
+            <div key={c.code} className="flex items-center gap-2 px-3 py-2 bg-zinc-800/60 rounded-lg">
               <span
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: c.color }}
@@ -56,18 +57,18 @@ export default function SynergyMap() {
               <span className="text-xs font-semibold" style={{ color: c.color }}>
                 {c.code}
               </span>
-              <span className="text-lg">{c.icon}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* 中央統計 */}
-      <div className="text-center py-1">
-        <div className="text-2xl font-bold text-white">
+      <div className="text-center py-1 tooltip-trigger">
+        <div className="text-2xl font-bold text-white tabular-nums">
           {Math.round(data.avg_overlap_pct)}%
         </div>
-        <div className="text-[10px] text-gray-400">{data.courses.length}資格 平均重複率</div>
+        <div className="text-[10px] text-zinc-400">{data.courses.length}資格 平均重複率</div>
+        <span className="tooltip-content">選択された資格間で共通する学習テーマの平均的な重複割合</span>
       </div>
 
       {/* シナジー領域リスト */}
@@ -80,13 +81,13 @@ export default function SynergyMap() {
             }
             className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
               selectedArea?.area_name === area.area_name
-                ? "bg-gray-700 border border-gray-600"
-                : "bg-gray-800 hover:bg-gray-750"
+                ? "bg-zinc-700 border border-zinc-600"
+                : "bg-zinc-800/60 hover:bg-zinc-800"
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-semibold truncate">{area.area_name}</span>
+                <span className="font-semibold truncate text-zinc-200">{area.area_name}</span>
                 <div className="flex gap-0.5">
                   {area.courses.map((code) => (
                     <span
@@ -97,14 +98,14 @@ export default function SynergyMap() {
                   ))}
                 </div>
               </div>
-              <span className="text-gray-400 font-mono">
+              <span className="text-zinc-400 font-mono tabular-nums">
                 {area.overlap_pct}%
               </span>
             </div>
 
             {/* 展開詳細 */}
             {selectedArea?.area_name === area.area_name && (
-              <div className="mt-2 space-y-1 border-t border-gray-700 pt-2">
+              <div className="mt-2 space-y-1 border-t border-zinc-700 pt-2">
                 {Object.entries(area.term_mappings).map(([code, desc]) => (
                   <div key={code} className="flex gap-2">
                     <span
@@ -113,7 +114,7 @@ export default function SynergyMap() {
                     >
                       {code}
                     </span>
-                    <span className="text-gray-400">{desc}</span>
+                    <span className="text-zinc-400">{desc}</span>
                   </div>
                 ))}
               </div>
