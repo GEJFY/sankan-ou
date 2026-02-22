@@ -1,6 +1,6 @@
 """Course endpoints"""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from src.deps import DbSession
@@ -16,9 +16,14 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 
 
 @router.get("", response_model=CourseListResponse)
-async def list_courses(db: DbSession) -> CourseListResponse:
-    """コース一覧取得"""
+async def list_courses(
+    db: DbSession,
+    include_all: bool = Query(False, description="全コース表示（プレミアム含む）"),
+) -> CourseListResponse:
+    """コース一覧取得（デフォルトはCIA/CISA/CFEのみ）"""
     stmt = select(Course).where(Course.is_active == True).order_by(Course.sort_order)  # noqa: E712
+    if not include_all:
+        stmt = stmt.where(Course.is_default == True)  # noqa: E712
     result = await db.execute(stmt)
     courses = result.scalars().all()
     return CourseListResponse(

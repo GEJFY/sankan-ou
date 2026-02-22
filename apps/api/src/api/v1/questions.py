@@ -42,13 +42,19 @@ async def generate_questions(body: GenerateQuestionsRequest, db: DbSession, curr
         difficulty=body.difficulty,
     )
 
-    raw_response = await generate(
-        user_prompt,
-        system=system,
-        model=MODEL_SONNET,
-        max_tokens=4096,
-        temperature=0.8,
-    )
+    try:
+        raw_response = await generate(
+            user_prompt,
+            system=system,
+            model=MODEL_SONNET,
+            max_tokens=4096,
+            temperature=0.8,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"問題生成に失敗しました: {e}",
+        )
 
     # JSON parse
     try:

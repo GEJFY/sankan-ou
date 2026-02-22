@@ -526,14 +526,21 @@ async def seed_courses_and_topics(db: AsyncSession) -> dict[str, uuid.UUID]:
             select(Course).where(Course.code == data["code"])
         )
         course = existing.scalar_one_or_none()
+        # CIA/CISA/CFE は三冠対象のデフォルトコース
+        default_courses = {"CIA", "CISA", "CFE"}
+
         if course is None:
             course = Course(
                 code=data["code"],
                 name=data["name"],
                 color=data["color"],
                 exam_config=data.get("exam_config"),
+                is_default=data["code"] in default_courses,
             )
             db.add(course)
+            await db.flush()
+        elif course.is_default != (data["code"] in default_courses):
+            course.is_default = data["code"] in default_courses
             await db.flush()
 
         course_ids[data["code"]] = course.id

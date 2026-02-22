@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
+from sqlalchemy import select
 
 from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview
@@ -29,6 +30,23 @@ async def get_due_cards(
     card_reviews = await fsrs_service.get_due_cards(
         db, user_id=current_user.id, course_id=course_id, limit=limit
     )
+
+    # 新規ユーザー: due CardReview が0件なら、未学習カードからCardReviewを自動作成
+    if len(card_reviews) == 0:
+        existing_subq = select(CardReview.card_id).where(
+            CardReview.user_id == current_user.id
+        )
+        stmt = select(Card).where(~Card.id.in_(existing_subq))
+        if course_id:
+            stmt = stmt.where(Card.course_id == course_id)
+        stmt = stmt.order_by(Card.sort_order, Card.created_at).limit(limit)
+        new_cards = (await db.execute(stmt)).scalars().all()
+
+        for card in new_cards:
+            cr = await fsrs_service.get_or_create_review(
+                db, user_id=current_user.id, card_id=card.id
+            )
+            card_reviews.append(cr)
 
     cards_out = []
     for cr in card_reviews:

@@ -1,6 +1,8 @@
 """Media endpoints - 音声/スライド学習"""
 
-from fastapi import APIRouter
+import json
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.llm.client import generate, MODEL_SONNET
@@ -48,8 +50,10 @@ async def generate_slides(body: GenerateSlideRequest):
 
     user_prompt = f"トピック「{body.topic}」について{body.slide_count}枚のスライドを作成してください。"
 
-    import json
-    result = await generate(user_prompt, system=system, model=MODEL_SONNET)
+    try:
+        result = await generate(user_prompt, system=system, model=MODEL_SONNET)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"スライド生成に失敗しました: {e}")
 
     # JSONパース試行
     try:
@@ -104,8 +108,10 @@ JSON形式で出力:
 
     user_prompt = f"トピック「{body.topic}」の音声解説スクリプトを作成してください。"
 
-    import json
-    result = await generate(user_prompt, system=system, model=MODEL_SONNET)
+    try:
+        result = await generate(user_prompt, system=system, model=MODEL_SONNET)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"音声スクリプト生成に失敗しました: {e}")
 
     try:
         if "```" in result:

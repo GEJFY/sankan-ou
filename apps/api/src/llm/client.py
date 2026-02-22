@@ -132,6 +132,15 @@ async def _anthropic_stream(
 # ============================================
 # 統一インターフェース
 # ============================================
+def _validate_credentials() -> None:
+    """LLM資格情報が設定されているか検証"""
+    if not settings.azure_foundry_endpoint or not settings.azure_foundry_api_key:
+        raise ValueError(
+            "LLM credentials not configured. "
+            "Set AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY environment variables."
+        )
+
+
 async def generate(
     prompt: str,
     system: str = "",
@@ -144,16 +153,23 @@ async def generate(
     Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
     """
     model = model or MODEL_CHAT
+    _validate_credentials()
     logger.info(f"generate: model={model}, max_tokens={max_tokens}")
 
-    if _is_claude(model):
-        return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
+    try:
+        if _is_claude(model):
+            return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
 
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-    return await _openai_generate(messages, model, max_tokens, temperature)
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        return await _openai_generate(messages, model, max_tokens, temperature)
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"LLM generate error (model={model}): {e}")
+        raise RuntimeError(f"LLM呼び出しに失敗しました: {type(e).__name__}") from e
 
 
 async def stream_generate(
@@ -168,16 +184,23 @@ async def stream_generate(
     Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
     """
     model = model or MODEL_CHAT
+    _validate_credentials()
     logger.info(f"stream_generate: model={model}, max_tokens={max_tokens}")
 
-    if _is_claude(model):
-        async for text in _anthropic_stream(system, prompt, model, max_tokens, temperature):
-            yield text
-        return
+    try:
+        if _is_claude(model):
+            async for text in _anthropic_stream(system, prompt, model, max_tokens, temperature):
+                yield text
+            return
 
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-    async for text in _openai_stream(messages, model, max_tokens, temperature):
-        yield text
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        async for text in _openai_stream(messages, model, max_tokens, temperature):
+            yield text
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"LLM stream error (model={model}): {e}")
+        raise RuntimeError(f"LLM呼び出しに失敗しました: {type(e).__name__}") from e
