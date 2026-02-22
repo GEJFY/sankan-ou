@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     llm_model_generation: str = "gpt-5-mini"
     llm_model_chat: str = "gpt-5-nano"
 
+    # Google Gemini (スライド生成用)
+    google_gemini_api_key: str = ""
+    google_gemini_model: str = "gemini-2.5-flash"
+
     # CORS
     cors_origins: list[str] = ["http://localhost:3001"]
 

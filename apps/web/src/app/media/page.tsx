@@ -10,6 +10,8 @@ interface Slide {
   content: string[];
   notes?: string;
   visual?: string;
+  image_base64?: string;
+  image_mime_type?: string;
 }
 
 interface AudioSection {
@@ -182,17 +184,34 @@ export default function MediaPage() {
                     {currentSlide + 1} / {slides.length}
                   </span>
                 </div>
-                <h2 className="text-xl font-bold mb-4">
-                  {slides[currentSlide]?.title}
-                </h2>
-                <ul className="space-y-2">
-                  {slides[currentSlide]?.content?.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-300">
-                      <span className="text-blue-400">•</span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+
+                {/* Gemini生成画像がある場合 */}
+                {slides[currentSlide]?.image_base64 ? (
+                  <div className="space-y-4">
+                    <img
+                      src={`data:${slides[currentSlide].image_mime_type || "image/png"};base64,${slides[currentSlide].image_base64}`}
+                      alt={slides[currentSlide]?.title || "スライド"}
+                      className="w-full rounded-xl"
+                    />
+                    <h2 className="text-lg font-bold">
+                      {slides[currentSlide]?.title}
+                    </h2>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold mb-4">
+                      {slides[currentSlide]?.title}
+                    </h2>
+                    <ul className="space-y-2">
+                      {slides[currentSlide]?.content?.map((item, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-300">
+                          <span className="text-blue-400">&bull;</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
               {slides[currentSlide]?.notes && (
                 <div className="mt-4 text-xs text-gray-500 bg-gray-800 rounded-lg p-3">

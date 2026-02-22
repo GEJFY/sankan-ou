@@ -46,6 +46,8 @@ export default function QuizPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [questionCount, setQuestionCount] = useState(5);
+  const [source, setSource] = useState<"auto" | "generate">("auto");
 
   // コース一覧取得
   useEffect(() => {
@@ -89,18 +91,38 @@ export default function QuizPage() {
     setScore({ correct: 0, total: 0 });
 
     try {
-      const data = await apiFetch<{ questions: Question[] }>(
-        "/questions/generate",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            topic_id: selectedTopic,
-            count: 5,
-            difficulty: 2,
-          }),
+      let allQuestions: Question[] = [];
+
+      // DB保存済み問題を優先取得（autoモード）
+      if (source === "auto") {
+        try {
+          const bankData = await apiFetch<{ questions: Question[] }>(
+            `/questions/bank?topic_id=${selectedTopic}&count=${questionCount}`
+          );
+          allQuestions = bankData.questions;
+        } catch {
+          // DB問題が取得できなくても続行
         }
-      );
-      setQuestions(data.questions);
+      }
+
+      // 不足分をLLM生成
+      if (allQuestions.length < questionCount) {
+        const remaining = questionCount - allQuestions.length;
+        const genData = await apiFetch<{ questions: Question[] }>(
+          "/questions/generate",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              topic_id: selectedTopic,
+              count: remaining,
+              difficulty: 2,
+            }),
+          }
+        );
+        allQuestions = [...allQuestions, ...genData.questions];
+      }
+
+      setQuestions(allQuestions);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "問題生成に失敗しました。APIキーを確認してください。"
@@ -201,13 +223,59 @@ export default function QuizPage() {
               </div>
             )}
 
+            {/* 問題数選択 */}
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 text-center">問題数</p>
+              <div className="flex gap-2 justify-center">
+                {[5, 10, 15, 20].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setQuestionCount(n)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                      questionCount === n
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-800 text-gray-400"
+                    }`}
+                  >
+                    {n}問
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 出題ソース */}
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => setSource("auto")}
+                className={`px-3 py-1.5 rounded-lg text-xs ${
+                  source === "auto"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-500"
+                }`}
+                title="DB保存済み問題を優先し、不足分をAI生成"
+              >
+                自動（DB優先）
+              </button>
+              <button
+                onClick={() => setSource("generate")}
+                className={`px-3 py-1.5 rounded-lg text-xs ${
+                  source === "generate"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-500"
+                }`}
+                title="全問をAIで新規生成"
+              >
+                AI生成のみ
+              </button>
+            </div>
+
             <div className="text-center">
               <button
                 onClick={generateQuestions}
                 disabled={!selectedTopic}
                 className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                5問を生成
+                {questionCount}問を開始
               </button>
             </div>
           </div>
