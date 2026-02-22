@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface FlashcardCard {
   id: string;
@@ -10,15 +10,24 @@ interface FlashcardCard {
 
 interface FlashcardProps {
   card: FlashcardCard;
+  isFlipped?: boolean;
   onFlip?: (isFlipped: boolean) => void;
 }
 
-export default function Flashcard({ card, onFlip }: FlashcardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+export default function Flashcard({ card, isFlipped: controlledFlipped, onFlip }: FlashcardProps) {
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const isFlipped = controlledFlipped !== undefined ? controlledFlipped : internalFlipped;
+
+  // Reset internal state when card changes
+  useEffect(() => {
+    setInternalFlipped(false);
+  }, [card.id]);
 
   const handleFlip = () => {
     const next = !isFlipped;
-    setIsFlipped(next);
+    if (controlledFlipped === undefined) {
+      setInternalFlipped(next);
+    }
     onFlip?.(next);
   };
 
@@ -39,24 +48,24 @@ export default function Flashcard({ card, onFlip }: FlashcardProps) {
         }`}
       >
         {/* Front */}
-        <div className="absolute inset-0 backface-hidden rounded-2xl border border-gray-700 bg-gray-900 p-8 flex flex-col justify-center">
-          <div className="text-xs text-gray-500 mb-4 uppercase tracking-wider">
+        <div className="absolute inset-0 backface-hidden rounded-2xl border border-zinc-700/60 bg-zinc-900 p-8 flex flex-col justify-center">
+          <div className="text-[10px] text-zinc-600 mb-4 uppercase tracking-[0.1em] font-medium">
             Question
           </div>
-          <p className="text-lg leading-relaxed whitespace-pre-wrap">
+          <p className="text-base leading-relaxed whitespace-pre-wrap text-zinc-200">
             {card.front}
           </p>
-          <div className="mt-6 text-sm text-gray-500 text-center">
+          <div className="mt-6 text-xs text-zinc-600 text-center">
             クリックまたはスペースキーで裏面表示
           </div>
         </div>
 
         {/* Back */}
-        <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border border-gray-700 bg-gray-800 p-8 flex flex-col justify-center">
-          <div className="text-xs text-gray-500 mb-4 uppercase tracking-wider">
+        <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border border-zinc-700/60 bg-zinc-800 p-8 flex flex-col justify-center">
+          <div className="text-[10px] text-zinc-600 mb-4 uppercase tracking-[0.1em] font-medium">
             Answer
           </div>
-          <p className="text-lg leading-relaxed whitespace-pre-wrap">
+          <p className="text-base leading-relaxed whitespace-pre-wrap text-zinc-200">
             {card.back}
           </p>
         </div>

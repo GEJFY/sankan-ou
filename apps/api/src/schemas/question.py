@@ -9,7 +9,7 @@ class GenerateQuestionsRequest(BaseModel):
     """問題生成リクエスト"""
 
     topic_id: uuid.UUID
-    count: int = Field(default=3, ge=1, le=10)
+    count: int = Field(default=5, ge=1, le=20)
     difficulty: int = Field(default=2, ge=1, le=5)
 
 

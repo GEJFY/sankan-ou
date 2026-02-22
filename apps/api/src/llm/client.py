@@ -132,12 +132,20 @@ async def _anthropic_stream(
 # ============================================
 # 統一インターフェース
 # ============================================
+def _azure_available() -> bool:
+    """Azure AI Foundry の資格情報が設定されているか"""
+    return bool(settings.azure_foundry_endpoint and settings.azure_foundry_api_key)
+
+
 def _validate_credentials() -> None:
-    """LLM資格情報が設定されているか検証"""
-    if not settings.azure_foundry_endpoint or not settings.azure_foundry_api_key:
+    """LLM資格情報が設定されているか検証（Azure or Gemini）"""
+    from src.llm.gemini_client import is_gemini_available
+
+    if not _azure_available() and not is_gemini_available():
         raise ValueError(
             "LLM credentials not configured. "
-            "Set AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY environment variables."
+            "Set AZURE_FOUNDRY_ENDPOINT/AZURE_FOUNDRY_API_KEY or "
+            "GOOGLE_GEMINI_PROJECT/GOOGLE_GEMINI_API_KEY."
         )
 
 
@@ -148,7 +156,7 @@ async def generate(
     max_tokens: int = 16384,
     temperature: float = 0.7,
 ) -> str:
-    """Non-streaming completion (プロバイダー自動判定)
+    """Non-streaming completion (Azure優先、Geminiフォールバック)
 
     Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
     """
@@ -156,20 +164,30 @@ async def generate(
     _validate_credentials()
     logger.info(f"generate: model={model}, max_tokens={max_tokens}")
 
-    try:
-        if _is_claude(model):
-            return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
+    # Azure AI Foundry が利用可能なら優先
+    if _azure_available():
+        try:
+            if _is_claude(model):
+                return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
 
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        return await _openai_generate(messages, model, max_tokens, temperature)
-    except ValueError:
-        raise
-    except Exception as e:
-        logger.error(f"LLM generate error (model={model}): {e}")
-        raise RuntimeError(f"LLM呼び出しに失敗しました: {type(e).__name__}") from e
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            return await _openai_generate(messages, model, max_tokens, temperature)
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.warning(f"Azure LLM failed (model={model}): {e}, trying Gemini fallback")
+
+    # Gemini フォールバック
+    from src.llm.gemini_client import generate_text, is_gemini_available
+
+    if is_gemini_available():
+        logger.info("Using Gemini fallback for text generation")
+        return await generate_text(prompt, system=system)
+
+    raise RuntimeError("全てのLLMプロバイダーが利用できません")
 
 
 async def stream_generate(
@@ -179,7 +197,7 @@ async def stream_generate(
     max_tokens: int = 16384,
     temperature: float = 0.7,
 ) -> AsyncIterator[str]:
-    """Streaming completion - SSE用 (プロバイダー自動判定)
+    """Streaming completion - SSE用 (Azure優先、Geminiフォールバック)
 
     Note: GPT-5系はreasoning tokensを使うため、max_tokensは十分大きく設定する必要がある。
     """
@@ -187,20 +205,33 @@ async def stream_generate(
     _validate_credentials()
     logger.info(f"stream_generate: model={model}, max_tokens={max_tokens}")
 
-    try:
-        if _is_claude(model):
-            async for text in _anthropic_stream(system, prompt, model, max_tokens, temperature):
+    # Azure AI Foundry が利用可能なら優先
+    if _azure_available():
+        try:
+            if _is_claude(model):
+                async for text in _anthropic_stream(system, prompt, model, max_tokens, temperature):
+                    yield text
+                return
+
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            async for text in _openai_stream(messages, model, max_tokens, temperature):
                 yield text
             return
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.warning(f"Azure LLM stream failed (model={model}): {e}, trying Gemini fallback")
 
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        async for text in _openai_stream(messages, model, max_tokens, temperature):
+    # Gemini フォールバック
+    from src.llm.gemini_client import stream_generate_text, is_gemini_available
+
+    if is_gemini_available():
+        logger.info("Using Gemini fallback for streaming")
+        async for text in stream_generate_text(prompt, system=system):
             yield text
-    except ValueError:
-        raise
-    except Exception as e:
-        logger.error(f"LLM stream error (model={model}): {e}")
-        raise RuntimeError(f"LLM呼び出しに失敗しました: {type(e).__name__}") from e
+        return
+
+    raise RuntimeError("全てのLLMプロバイダーが利用できません")

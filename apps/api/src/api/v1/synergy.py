@@ -73,25 +73,36 @@ async def get_course_plugin_info(course_code: str):
 async def get_synergy_study_cards(
     db: DbSession,
     area: str = Query(None, description="シナジー領域名でフィルタ"),
+    course_code: str = Query(None, description="資格コードでフィルタ (CIA/CISA/CFE)"),
     limit: int = Query(10, ge=1, le=50),
 ):
     """シナジー学習カード取得 - 共通テーマで横断出題"""
-    now = datetime.now(timezone.utc)
+    # コースフィルタ用のcourse_idを取得
+    filter_course_ids: list | None = None
+    if course_code:
+        codes = [c.strip().upper() for c in course_code.split(",")]
+        courses_result = await db.execute(
+            select(Course).where(Course.code.in_(codes))
+        )
+        filter_course_ids = [c.id for c in courses_result.scalars().all()]
 
     # is_synergy=True のカードを取得
-    stmt = (
-        select(Card)
-        .where(Card.is_synergy.is_(True))
-        .limit(limit)
-    )
+    stmt = select(Card).where(Card.is_synergy.is_(True))
+    if filter_course_ids is not None:
+        stmt = stmt.where(Card.course_id.in_(filter_course_ids))
+    stmt = stmt.limit(limit)
     result = await db.execute(stmt)
     synergy_cards = list(result.scalars().all())
 
-    # 通常カードも含めて3資格からバランスよく取得
+    # 通常カードも含めてバランスよく取得
     if len(synergy_cards) < limit:
         remaining = limit - len(synergy_cards)
-        # 各コースから均等に
-        courses_result = await db.execute(select(Course))
+        if filter_course_ids is not None:
+            courses_result = await db.execute(
+                select(Course).where(Course.id.in_(filter_course_ids))
+            )
+        else:
+            courses_result = await db.execute(select(Course))
         courses = list(courses_result.scalars().all())
 
         per_course = max(1, remaining // len(courses)) if courses else remaining

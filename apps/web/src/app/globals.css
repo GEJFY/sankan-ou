@@ -4,14 +4,38 @@
   --cia-color: #e94560;
   --cisa-color: #0891b2;
   --cfe-color: #7c3aed;
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --surface: #18181b;
+  --surface-2: #27272a;
+  --border: #27272a;
+  --border-subtle: #1e1e22;
+  --muted: #71717a;
+  --accent: #3b82f6;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
 }
 
 /* 3D Flashcard animation utilities */
@@ -29,4 +53,48 @@ body {
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+
+/* Tooltip styles */
+.tooltip-trigger {
+  position: relative;
+}
+
+.tooltip-trigger .tooltip-content {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  z-index: 50;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a1a1aa;
+  white-space: normal;
+  min-width: 200px;
+  max-width: 300px;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip-trigger .tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #3f3f46 transparent transparent transparent;
+}
+
+.tooltip-trigger:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
 }

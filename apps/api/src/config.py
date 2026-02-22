@@ -42,8 +42,12 @@ class Settings(BaseSettings):
     google_gemini_model: str = "gemini-2.5-flash"  # テキスト生成用
     google_gemini_image_model: str = "gemini-2.5-flash-image"  # 画像生成用
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:3001"]
+    # CORS (dev: localhost:3000, localhost:3001)
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:8003",
+    ]
 
     model_config = {
         "env_file": str(_ENV_FILE) if _ENV_FILE.exists() else ".env",

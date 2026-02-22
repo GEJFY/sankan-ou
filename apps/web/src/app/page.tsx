@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
+import PageHeader from "@/components/ui/page-header";
 import ProgressRing from "@/components/dashboard/progress-rings";
 import TodayTasks from "@/components/dashboard/today-tasks";
 import WeakPoints from "@/components/dashboard/weak-points";
@@ -11,6 +12,12 @@ import StudyHistory from "@/components/dashboard/study-history";
 import StreakBadge from "@/components/dashboard/streak-badge";
 import { apiFetch } from "@/lib/api-client";
 import { COURSE_COLORS } from "@/lib/constants";
+import {
+  BookOpen,
+  PenLine,
+  FileCheck2,
+  Settings as SettingsIcon,
+} from "lucide-react";
 
 interface CourseSummary {
   course_id: string;
@@ -49,6 +56,13 @@ interface MockExamResultItem {
   created_at: string;
 }
 
+const ONBOARDING_STEPS = [
+  { step: "1", label: "設定", desc: "学習する資格を登録", href: "/settings", icon: SettingsIcon },
+  { step: "2", label: "SRS学習", desc: "フラッシュカードで基礎知識を記憶", href: "/study", icon: BookOpen },
+  { step: "3", label: "問題演習", desc: "トピック別の問題で実力チェック", href: "/quiz", icon: PenLine },
+  { step: "4", label: "模擬試験", desc: "本番形式で合格力を測定", href: "/mock-exam", icon: FileCheck2 },
+];
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
@@ -67,7 +81,6 @@ export default function DashboardPage() {
       } catch (e) {
         setError(e instanceof Error ? e.message : "データ取得に失敗しました");
       }
-      // 模試履歴は独立して取得（失敗してもOK）
       try {
         const examData = await apiFetch<{ results: MockExamResultItem[] }>(
           "/mock-exam/history?limit=5"
@@ -86,43 +99,57 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">ダッシュボード</h1>
-          <p className="text-gray-500 mt-1">GRC Triple Crown - 資格同時合格への進捗</p>
-        </div>
+        <PageHeader
+          title="ダッシュボード"
+          description="GRC Triple Crown — 資格同時合格への進捗"
+          tooltip="登録済みの各資格について、カード習得率・合格確率・本日の復習予定を一覧表示します。"
+        />
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 text-red-300">
+          <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-4 text-red-400 text-sm">
             {error}
           </div>
         )}
 
-        {/* はじめにガイド（データがない場合） */}
+        {/* Onboarding guide */}
         {dashboard && dashboard.courses.length === 0 && (
-          <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-cyan-900/30 border border-blue-800/50 rounded-2xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold">はじめに</h2>
-            <p className="text-sm text-gray-300">
-              GRC Triple Crown へようこそ！以下の順序で学習を進めましょう。
-            </p>
+          <div className="bg-gradient-to-r from-blue-950/30 via-indigo-950/20 to-violet-950/30 border border-blue-900/30 rounded-2xl p-6 space-y-5">
+            <div>
+              <h2 className="text-base font-semibold text-zinc-200">はじめに</h2>
+              <p className="text-sm text-zinc-400 mt-1">
+                GRC Triple Crown へようこそ。以下のステップで学習を開始しましょう。
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {[
-                { step: "1", label: "設定", desc: "学習したい資格を登録", href: "/settings" },
-                { step: "2", label: "SRS学習", desc: "フラッシュカードで基礎知識を記憶", href: "/study" },
-                { step: "3", label: "問題演習", desc: "トピック別の問題で実力チェック", href: "/quiz" },
-                { step: "4", label: "模擬試験", desc: "本番形式で合格力を測定", href: "/mock-exam" },
-              ].map((s) => (
-                <a key={s.step} href={s.href} className="bg-gray-800/50 rounded-xl p-4 hover:bg-gray-700/50 transition group">
-                  <div className="text-blue-400 font-bold text-lg mb-1">Step {s.step}</div>
-                  <div className="text-sm font-semibold text-gray-200 group-hover:text-white">{s.label}</div>
-                  <div className="text-xs text-gray-500 mt-1">{s.desc}</div>
-                </a>
-              ))}
+              {ONBOARDING_STEPS.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <a
+                    key={s.step}
+                    href={s.href}
+                    className="group bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-blue-800/40 transition-all"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-blue-400/80 bg-blue-950/40 px-1.5 py-0.5 rounded">
+                        Step {s.step}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Icon size={14} className="text-zinc-500" />
+                      <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">
+                        {s.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-600 mt-1.5">{s.desc}</p>
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* 資格プログレスリング */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Course progress rings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {dashboard?.courses.map((course) => (
             <ProgressRing
               key={course.course_id}
@@ -136,8 +163,8 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* 今日の統計 + タスク */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Today stats + tasks */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <StreakBadge />
           <TodayTasks
             totalDue={totalDue}
@@ -146,9 +173,9 @@ export default function DashboardPage() {
           <WeakPoints topics={weakTopics} />
         </div>
 
-        {/* 合格確率予測 */}
+        {/* Pass probability */}
         {dashboard && dashboard.courses.length > 0 && dashboard.courses.some(c => c.total_cards > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {dashboard.courses.map((course) => (
               <PassProbability
                 key={course.course_id}
@@ -160,54 +187,59 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* シナジーマップ + 学習履歴 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Synergy map + study history */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <SynergyMap />
           <StudyHistory />
         </div>
 
-        {/* 最近の模擬試験 */}
+        {/* Recent mock exams */}
         {mockExams.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold mb-4" title="過去に受験した模擬試験のスコアと合否結果">最近の模擬試験</h2>
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-semibold text-zinc-200">最近の模擬試験</h2>
+              <span className="tooltip-trigger">
+                <span className="text-zinc-600 cursor-help text-xs">[?]</span>
+                <span className="tooltip-content">過去に受験した模擬試験のスコアと合否結果を表示します。</span>
+              </span>
+            </div>
             <div className="space-y-2">
               {mockExams.map((exam) => (
                 <div
                   key={exam.id}
-                  className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3"
+                  className="flex items-center justify-between bg-zinc-800/40 rounded-xl px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-white"
                       style={{
-                        backgroundColor:
-                          COURSE_COLORS[exam.course_code] ?? "#666",
+                        backgroundColor: COURSE_COLORS[exam.course_code] ?? "#666",
                       }}
                     >
                       {exam.course_code}
                     </span>
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-zinc-400">
                       {exam.correct_count}/{exam.total_questions}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span
                       className={`text-lg font-bold ${
-                        exam.passed ? "text-green-400" : "text-red-400"
+                        exam.passed ? "text-emerald-400" : "text-red-400"
                       }`}
                     >
                       {Math.round(exam.score_pct)}%
                     </span>
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                      className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
                         exam.passed
-                          ? "bg-green-900/40 text-green-400"
-                          : "bg-red-900/40 text-red-400"
+                          ? "bg-emerald-950/40 text-emerald-400 border border-emerald-800/30"
+                          : "bg-red-950/40 text-red-400 border border-red-800/30"
                       }`}
                     >
                       {exam.passed ? "合格" : "不合格"}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-zinc-600">
                       {new Date(exam.created_at).toLocaleDateString("ja-JP", {
                         month: "short",
                         day: "numeric",

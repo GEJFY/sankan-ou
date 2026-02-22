@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
+import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
-import { COURSE_COLORS } from "@/lib/constants";
+import { Play, ChevronRight, RotateCcw } from "lucide-react";
 
 interface Choice {
   text: string;
@@ -49,7 +50,6 @@ export default function QuizPage() {
   const [questionCount, setQuestionCount] = useState(5);
   const [source, setSource] = useState<"auto" | "generate">("auto");
 
-  // コース一覧取得
   useEffect(() => {
     apiFetch<{ courses: Course[] }>("/courses")
       .then((data) => {
@@ -59,7 +59,6 @@ export default function QuizPage() {
       .catch(() => setError("コース取得に失敗しました"));
   }, []);
 
-  // コース変更時にトピック一覧を取得
   useEffect(() => {
     if (!selectedCourse) return;
     setTopics([]);
@@ -68,14 +67,11 @@ export default function QuizPage() {
       .then((data) => {
         setTopics(data.topics);
         if (data.topics.length > 0) {
-          // ランダムにトピックを選択
           const idx = Math.floor(Math.random() * data.topics.length);
           setSelectedTopic(data.topics[idx].id);
         }
       })
-      .catch(() => {
-        // トピック取得失敗は無視（コースがDBにない場合）
-      });
+      .catch(() => {});
   }, [selectedCourse]);
 
   const generateQuestions = async () => {
@@ -93,7 +89,6 @@ export default function QuizPage() {
     try {
       let allQuestions: Question[] = [];
 
-      // DB保存済み問題を優先取得（autoモード）
       if (source === "auto") {
         try {
           const bankData = await apiFetch<{ questions: Question[] }>(
@@ -105,7 +100,6 @@ export default function QuizPage() {
         }
       }
 
-      // 不足分をLLM生成
       if (allQuestions.length < questionCount) {
         const remaining = questionCount - allQuestions.length;
         const genData = await apiFetch<{ questions: Question[] }>(
@@ -170,29 +164,33 @@ export default function QuizPage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">問題演習</h1>
+        <PageHeader
+          title="問題演習"
+          description="トピック別の四肢択一問題で実力確認"
+          tooltip="DB保存済み問題を優先的に出題し、不足分はAIがリアルタイムで生成します。「AI生成のみ」モードでは全問を新規生成します。"
+        />
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 text-red-300 text-sm">
+          <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-4 text-red-400 text-sm">
             {error}
           </div>
         )}
 
-        {/* コース・トピック選択 + 生成ボタン */}
+        {/* Setup panel */}
         {questions.length === 0 && !isGenerating && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 space-y-6">
-            <p className="text-gray-400 text-center">コースとトピックを選択して問題を生成</p>
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-8 space-y-6">
+            <p className="text-zinc-500 text-center text-sm">コースとトピックを選択して問題を生成</p>
 
-            {/* コース選択 */}
+            {/* Course selection */}
             <div className="flex gap-3 justify-center flex-wrap">
               {courses.map((course) => (
                 <button
                   key={course.id}
                   onClick={() => setSelectedCourse(course.id)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     selectedCourse === course.id
-                      ? "text-white scale-105"
-                      : "text-gray-400 bg-gray-800"
+                      ? "text-white"
+                      : "text-zinc-500 bg-zinc-800 border border-zinc-700"
                   }`}
                   style={
                     selectedCourse === course.id
@@ -205,14 +203,14 @@ export default function QuizPage() {
               ))}
             </div>
 
-            {/* トピック選択 */}
+            {/* Topic selection */}
             {topics.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 text-center">トピック</p>
+                <p className="text-xs text-zinc-500 text-center font-medium">トピック</p>
                 <select
                   value={selectedTopic}
                   onChange={(e) => setSelectedTopic(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors"
                 >
                   {topics.map((topic) => (
                     <option key={topic.id} value={topic.id}>
@@ -223,18 +221,18 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* 問題数選択 */}
+            {/* Question count */}
             <div className="space-y-2">
-              <p className="text-xs text-gray-500 text-center">問題数</p>
+              <p className="text-xs text-zinc-500 text-center font-medium">問題数</p>
               <div className="flex gap-2 justify-center">
                 {[5, 10, 15, 20].map((n) => (
                   <button
                     key={n}
                     onClick={() => setQuestionCount(n)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       questionCount === n
                         ? "bg-blue-600 text-white"
-                        : "bg-gray-800 text-gray-400"
+                        : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600"
                     }`}
                   >
                     {n}問
@@ -243,14 +241,14 @@ export default function QuizPage() {
               </div>
             </div>
 
-            {/* 出題ソース */}
+            {/* Source mode */}
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setSource("auto")}
-                className={`px-3 py-1.5 rounded-lg text-xs ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   source === "auto"
-                    ? "bg-gray-700 text-white"
-                    : "text-gray-500"
+                    ? "bg-zinc-700 text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-400"
                 }`}
                 title="DB保存済み問題を優先し、不足分をAI生成"
               >
@@ -258,10 +256,10 @@ export default function QuizPage() {
               </button>
               <button
                 onClick={() => setSource("generate")}
-                className={`px-3 py-1.5 rounded-lg text-xs ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   source === "generate"
-                    ? "bg-gray-700 text-white"
-                    : "text-gray-500"
+                    ? "bg-zinc-700 text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-400"
                 }`}
                 title="全問をAIで新規生成"
               >
@@ -273,48 +271,60 @@ export default function QuizPage() {
               <button
                 onClick={generateQuestions}
                 disabled={!selectedTopic}
-                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
+                <Play size={14} />
                 {questionCount}問を開始
               </button>
             </div>
           </div>
         )}
 
-        {/* 生成中 */}
+        {/* Generating */}
         {isGenerating && (
           <div className="text-center py-20">
-            <div className="animate-pulse text-xl text-gray-400">
+            <div className="animate-pulse text-zinc-500 text-sm">
               AI が問題を生成中...
             </div>
           </div>
         )}
 
-        {/* 問題表示 */}
+        {/* Question display */}
         {question && !isComplete && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 space-y-6">
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-8 space-y-6">
+            <div className="flex justify-between text-sm text-zinc-500">
+              <span className="tabular-nums">
                 Q{currentQ + 1} / {questions.length}
               </span>
-              <span>難易度: {"★".repeat(question.difficulty)}</span>
+              <span className="flex items-center gap-1">
+                {"difficulty" in question && (
+                  <span className="text-yellow-500/70">
+                    {"★".repeat(question.difficulty)}
+                    <span className="text-zinc-700">{"★".repeat(Math.max(0, 3 - question.difficulty))}</span>
+                  </span>
+                )}
+              </span>
             </div>
 
-            <p className="text-lg leading-relaxed">{question.stem}</p>
+            <p className="text-[15px] leading-relaxed text-zinc-200">{question.stem}</p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {question.choices.map((choice, i) => {
-                const letter = String.fromCharCode(65 + i); // A, B, C, D
-                let bgClass = "bg-gray-800 hover:bg-gray-700 border-gray-700";
+                const letter = String.fromCharCode(65 + i);
+                let borderClass = "border-zinc-700/60";
+                let bgClass = "bg-zinc-800/40 hover:bg-zinc-800/70";
 
                 if (showResult) {
                   if (choice.is_correct) {
-                    bgClass = "bg-green-900/40 border-green-600";
+                    borderClass = "border-emerald-600/60";
+                    bgClass = "bg-emerald-950/30";
                   } else if (i === selectedAnswer) {
-                    bgClass = "bg-red-900/40 border-red-600";
+                    borderClass = "border-red-600/60";
+                    bgClass = "bg-red-950/30";
                   }
                 } else if (i === selectedAnswer) {
-                  bgClass = "bg-blue-900/40 border-blue-500";
+                  borderClass = "border-blue-500/60";
+                  bgClass = "bg-blue-950/30";
                 }
 
                 return (
@@ -322,12 +332,12 @@ export default function QuizPage() {
                     key={i}
                     onClick={() => !showResult && setSelectedAnswer(i)}
                     disabled={showResult}
-                    className={`w-full text-left px-4 py-3 rounded-xl border ${bgClass} transition-colors text-sm`}
+                    className={`w-full text-left px-4 py-3 rounded-xl border ${borderClass} ${bgClass} transition-all text-sm`}
                   >
-                    <span className="font-semibold mr-2">{letter}.</span>
-                    {choice.text}
-                    {showResult && (
-                      <p className="text-xs text-gray-400 mt-1 ml-5">
+                    <span className="font-medium text-zinc-400 mr-2">{letter}.</span>
+                    <span className="text-zinc-200">{choice.text}</span>
+                    {showResult && choice.explanation && (
+                      <p className="text-xs text-zinc-500 mt-1.5 ml-5">
                         {choice.explanation}
                       </p>
                     )}
@@ -336,44 +346,43 @@ export default function QuizPage() {
               })}
             </div>
 
-            {/* 解説 */}
             {showResult && question.explanation && (
-              <div className="bg-gray-800 rounded-xl p-4 text-sm text-gray-300">
-                <p className="font-semibold text-gray-400 mb-1">解説:</p>
+              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-xl p-4 text-sm text-zinc-400">
+                <p className="font-medium text-zinc-300 mb-1 text-xs uppercase tracking-wider">解説</p>
                 {question.explanation}
               </div>
             )}
 
-            {/* アクション */}
             <div className="flex justify-end gap-3">
               {!showResult ? (
                 <button
                   onClick={submitAnswer}
                   disabled={selectedAnswer === null}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm disabled:opacity-50"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm disabled:opacity-50 transition-colors"
                 >
                   回答する
                 </button>
               ) : (
                 <button
                   onClick={nextQuestion}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm"
+                  className="inline-flex items-center gap-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm transition-colors"
                 >
                   次の問題
+                  <ChevronRight size={14} />
                 </button>
               )}
             </div>
           </div>
         )}
 
-        {/* 完了 */}
+        {/* Complete */}
         {isComplete && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 text-center space-y-4">
-            <h2 className="text-2xl font-bold">演習完了</h2>
-            <p className="text-4xl font-bold text-blue-400">
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-8 text-center space-y-4">
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-100">演習完了</h2>
+            <p className="text-4xl font-bold text-blue-400 tabular-nums">
               {score.correct} / {score.total}
             </p>
-            <p className="text-gray-400">
+            <p className="text-zinc-500 text-sm">
               正答率: {Math.round((score.correct / score.total) * 100)}%
             </p>
             <button
@@ -382,8 +391,9 @@ export default function QuizPage() {
                 setCurrentQ(0);
                 setScore({ correct: 0, total: 0 });
               }}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm transition-colors"
             >
+              <RotateCcw size={14} />
               もう一度
             </button>
           </div>

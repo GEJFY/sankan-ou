@@ -111,6 +111,28 @@ async def generate_text(prompt: str, system: str = "") -> str:
         raise RuntimeError(f"Geminiテキスト生成に失敗しました: {type(e).__name__}") from e
 
 
+async def stream_generate_text(prompt: str, system: str = ""):
+    """Gemini でテキストをストリーミング生成（SSE用）"""
+    client = _get_client()
+
+    config = types.GenerateContentConfig()
+    if system:
+        config = types.GenerateContentConfig(system_instruction=system)
+
+    try:
+        response_stream = client.models.generate_content_stream(
+            model=settings.google_gemini_model,
+            contents=prompt,
+            config=config,
+        )
+        for chunk in response_stream:
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        logger.error(f"Gemini stream error: {e}")
+        raise RuntimeError(f"Geminiストリーミング生成に失敗しました: {type(e).__name__}") from e
+
+
 def is_gemini_available() -> bool:
     """Gemini が利用可能かチェック"""
     return bool(settings.google_gemini_project or settings.google_gemini_api_key)
