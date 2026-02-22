@@ -185,7 +185,7 @@ export default function SynergyPage() {
             <div className="space-y-2">
               <p className="text-xs text-zinc-500 text-center font-medium">カード枚数</p>
               <div className="flex gap-2 justify-center">
-                {[5, 10, 15, 20].map((n) => (
+                {[5, 10, 15, 20, 30, 50].map((n) => (
                   <button
                     key={n}
                     onClick={() => setCardCount(n)}

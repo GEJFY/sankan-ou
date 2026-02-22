@@ -1,9 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { COURSE_COLORS } from "@/lib/constants";
 import {
   LayoutDashboard,
   BookOpen,
@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   LogOut,
   Info,
+  Sun,
+  Moon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,9 +73,47 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/** CIA/CISA/CFE only - hardcoded for the Triple Crown indicator */
+const CERT_INDICATORS = [
+  { code: "CIA", color: "#e94560" },
+  { code: "CISA", color: "#0891b2" },
+  { code: "CFE", color: "#7c3aed" },
+] as const;
+
+/**
+ * Determine whether a nav item should use tooltip-below class
+ * (items near the top of the screen where upward tooltips get clipped).
+ * Group index 0 = dashboard, group index 1 = 学習 group.
+ */
+function shouldTooltipBelow(groupIndex: number): boolean {
+  return groupIndex <= 1;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  // Theme state: "dark" (default) or "light"
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  // Initialize theme from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light" || stored === "dark") {
+      setTheme(stored);
+      document.documentElement.setAttribute("data-theme", stored);
+    } else {
+      // Default to dark
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+  };
 
   return (
     <aside className="w-[260px] bg-zinc-950 border-r border-zinc-800/60 min-h-screen flex flex-col">
@@ -106,6 +146,9 @@ export default function Sidebar() {
             {group.items.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
+              const tooltipClass = shouldTooltipBelow(gi)
+                ? "tooltip-trigger tooltip-below"
+                : "tooltip-trigger";
               return (
                 <Link
                   key={item.href}
@@ -124,7 +167,7 @@ export default function Sidebar() {
                     }`}
                   />
                   <span className="flex-1">{item.label}</span>
-                  <span className="tooltip-trigger">
+                  <span className={tooltipClass}>
                     <Info
                       size={12}
                       className="text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-help"
@@ -173,19 +216,30 @@ export default function Sidebar() {
                 {user.display_name}
               </span>
             </div>
-            <button
-              onClick={logout}
-              title="ログアウト"
-              className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800/60 transition"
-            >
-              <LogOut size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                title={theme === "dark" ? "ライトモードに切替" : "ダークモードに切替"}
+                className="p-1.5 rounded-md text-zinc-600 hover:text-amber-400 hover:bg-zinc-800/60 transition"
+              >
+                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+              {/* Logout */}
+              <button
+                onClick={logout}
+                title="ログアウト"
+                className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800/60 transition"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Course indicator dots */}
+        {/* Course indicator dots - CIA/CISA/CFE only */}
         <div className="flex items-center gap-3 px-1">
-          {Object.entries(COURSE_COLORS).map(([code, color]) => (
+          {CERT_INDICATORS.map(({ code, color }) => (
             <div key={code} className="flex items-center gap-1.5" title={code}>
               <span
                 className="w-2 h-2 rounded-full"

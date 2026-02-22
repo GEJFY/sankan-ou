@@ -53,10 +53,15 @@ export function useStudySession(courseId?: string) {
         sessionComplete: data.cards.length === 0,
       }));
     } catch (e) {
+      const msg = e instanceof Error ? e.message : "カード取得に失敗しました";
+      // "Failed to fetch" はネットワークエラー — ユーザーに分かりやすいメッセージに変換
+      const userMsg = msg === "Failed to fetch"
+        ? "サーバーに接続できません。APIサーバーが起動しているか確認してください。"
+        : msg;
       setState((s) => ({
         ...s,
         isLoading: false,
-        error: e instanceof Error ? e.message : "カード取得に失敗しました",
+        error: userMsg,
       }));
     }
   }, [courseId]);
