@@ -27,7 +27,7 @@ def _auth_headers(token: str) -> dict:
 
 async def _get_course_id(client: AsyncClient, code: str) -> str:
     """ヘルパー: コースIDを取得"""
-    courses_resp = await client.get("/api/v1/courses")
+    courses_resp = await client.get("/api/v1/courses?include_all=true")
     courses = courses_resp.json()["courses"]
     course = next((c for c in courses if c["code"] == code), None)
     assert course is not None, f"Course {code} not found. Courses: {[c['code'] for c in courses]}"
