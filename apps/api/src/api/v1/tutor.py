@@ -82,12 +82,14 @@ async def compare_concepts(body: CompareRequest):
 @router.post("/chat")
 async def chat(body: ChatRequest):
     """一般Q&A (SSEストリーミング)"""
-    from src.llm.prompts.tutor import LEVEL_DESCRIPTIONS
+    from src.llm.prompts.tutor import LEVEL_DESCRIPTIONS, MARKDOWN_INSTRUCTION
 
     level_desc = LEVEL_DESCRIPTIONS.get(body.level, LEVEL_DESCRIPTIONS[4])
     system = f"""あなたはGRC分野の優秀な教師です。CIA/CISA/CFE資格に精通しています。
 以下のレベルで回答してください: {level_desc}
-簡潔で正確な回答を心がけてください。"""
+簡潔で正確な回答を心がけてください。
+関連するCIA/CISA/CFEのシラバス領域も可能な限り言及してください。
+{MARKDOWN_INSTRUCTION}"""
 
     return StreamingResponse(
         sse_wrapper(stream_generate(body.message, system=system)),

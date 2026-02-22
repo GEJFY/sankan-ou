@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { API_BASE_URL } from "@/lib/constants";
 import LevelSelector from "./level-selector";
-import { Send } from "lucide-react";
+import { Send, Volume2, VolumeX, Trash2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,12 +22,41 @@ const MODES: { value: TutorMode; label: string; desc: string; detail: string }[]
   { value: "bridge", label: "ブリッジ", desc: "資格間の橋渡し", detail: "ある資格の知識を別の資格に応用する方法を解説" },
 ];
 
+/**
+ * アシスタントメッセージからフォローアップ質問を抽出する。
+ * "関連する質問:" または "**関連する質問:**" ヘッダーの後にある
+ * 番号付きリスト項目を取得する。
+ */
+function parseFollowUpQuestions(content: string): string[] {
+  const questions: string[] = [];
+  // 「関連する質問」セクション以降の番号付き行を抽出
+  const sectionMatch = content.match(/\*{0,2}関連する質問[:：]\*{0,2}\s*\n([\s\S]*?)$/);
+  if (sectionMatch) {
+    const lines = sectionMatch[1].split("\n");
+    for (const line of lines) {
+      const match = line.match(/^\s*\d+[.．)\)]\s*(.+)/);
+      if (match) {
+        questions.push(match[1].trim());
+      }
+    }
+  }
+  return questions;
+}
+
+/**
+ * メッセージ本文からフォローアップ質問セクションを除去して返す。
+ */
+function stripFollowUpSection(content: string): string {
+  return content.replace(/\n*\*{0,2}関連する質問[:：]\*{0,2}\s*\n[\s\S]*?$/, "").trimEnd();
+}
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [level, setLevel] = useState(4);
   const [mode, setMode] = useState<TutorMode>("chat");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -34,6 +65,58 @@ export default function ChatInterface() {
       behavior: "smooth",
     });
   };
+
+  /** TTS: アシスタントメッセージを日本語で読み上げ */
+  const speakMessage = useCallback((text: string, messageIndex: number) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    // 読み上げ中なら停止
+    if (speakingIndex === messageIndex) {
+      window.speechSynthesis.cancel();
+      setSpeakingIndex(null);
+      return;
+    }
+
+    // 他のメッセージを読み上げ中なら先に停止
+    window.speechSynthesis.cancel();
+
+    // Markdownの記号を除去してプレーンテキストにする
+    const plainText = text
+      .replace(/#{1,6}\s/g, "")
+      .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+      .replace(/`{1,3}[^`]*`{1,3}/g, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[|─\-]{3,}/g, "")
+      .replace(/^\s*[-*+]\s/gm, "")
+      .replace(/^\s*\d+[.．]\s/gm, "")
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = "ja-JP";
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    // 日本語の音声を優先選択
+    const voices = window.speechSynthesis.getVoices();
+    const jaVoice = voices.find((v) => v.lang.startsWith("ja"));
+    if (jaVoice) {
+      utterance.voice = jaVoice;
+    }
+
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+
+    setSpeakingIndex(messageIndex);
+    window.speechSynthesis.speak(utterance);
+  }, [speakingIndex]);
+
+  /** 会話をクリア */
+  const clearChat = useCallback(() => {
+    if (isStreaming) return;
+    window.speechSynthesis?.cancel();
+    setSpeakingIndex(null);
+    setMessages([]);
+  }, [isStreaming]);
 
   const sendMessage = useCallback(
     async (message: string, overrideEndpoint?: string) => {
@@ -124,11 +207,32 @@ export default function ChatInterface() {
     [level, isStreaming, mode]
   );
 
+  /** フォローアップ質問をクリックしたときの処理 */
+  const handleFollowUp = useCallback(
+    (question: string) => {
+      sendMessage(question);
+    },
+    [sendMessage]
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-w-3xl mx-auto">
       {/* Header */}
       <div className="space-y-2 mb-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">AI Tutor</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">AI Tutor</h1>
+          {messages.length > 0 && (
+            <button
+              onClick={clearChat}
+              disabled={isStreaming}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 bg-zinc-800 border border-zinc-700 rounded-lg hover:border-zinc-600 hover:text-zinc-300 disabled:opacity-50 transition-colors"
+              title="会話をクリアして新しく始める"
+            >
+              <Trash2 size={12} />
+              新しい会話
+            </button>
+          )}
+        </div>
         <p className="text-xs text-zinc-500">5つのモードで質問・解説・比較・ソクラテス式対話・資格間ブリッジ学習</p>
       </div>
 
@@ -195,25 +299,84 @@ export default function ChatInterface() {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+        {messages.map((msg, i) => {
+          const isAssistant = msg.role === "assistant";
+          const isCurrentlyStreaming = isStreaming && i === messages.length - 1 && isAssistant;
+          const followUps = isAssistant && !isCurrentlyStreaming
+            ? parseFollowUpQuestions(msg.content)
+            : [];
+          const displayContent = isAssistant && followUps.length > 0
+            ? stripFollowUpSection(msg.content)
+            : msg.content;
+
+          return (
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-800 border border-zinc-700/40 text-zinc-300"
-              }`}
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.content}
-              {isStreaming && i === messages.length - 1 && msg.role === "assistant" && (
-                <span className="animate-pulse ml-1 text-blue-400">|</span>
-              )}
+              <div className="max-w-[85%] space-y-2">
+                <div
+                  className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white whitespace-pre-wrap"
+                      : "bg-zinc-800 border border-zinc-700/40 text-zinc-300"
+                  }`}
+                >
+                  {isAssistant ? (
+                    <>
+                      <div className="markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {displayContent}
+                        </ReactMarkdown>
+                      </div>
+                      {isCurrentlyStreaming && (
+                        <span className="animate-pulse ml-1 text-blue-400">|</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {msg.content}
+                    </>
+                  )}
+                </div>
+
+                {/* TTS button for assistant messages (shown when not streaming) */}
+                {isAssistant && !isCurrentlyStreaming && msg.content && (
+                  <div className="flex items-center gap-2 pl-1">
+                    <button
+                      onClick={() => speakMessage(msg.content, i)}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 rounded-md hover:bg-zinc-800 transition-colors"
+                      title={speakingIndex === i ? "読み上げを停止" : "日本語で読み上げ"}
+                    >
+                      {speakingIndex === i ? (
+                        <VolumeX size={14} className="text-blue-400" />
+                      ) : (
+                        <Volume2 size={14} />
+                      )}
+                      <span>{speakingIndex === i ? "停止" : "読み上げ"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Follow-up question buttons */}
+                {followUps.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1 pl-1">
+                    {followUps.map((q, qi) => (
+                      <button
+                        key={qi}
+                        onClick={() => handleFollowUp(q)}
+                        disabled={isStreaming}
+                        className="px-3 py-1.5 text-xs text-blue-400 bg-blue-950/30 border border-blue-800/40 rounded-lg hover:bg-blue-900/40 hover:border-blue-700/50 hover:text-blue-300 disabled:opacity-50 transition-colors text-left"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Input */}

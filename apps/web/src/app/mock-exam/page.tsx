@@ -124,7 +124,7 @@ export default function MockExamPage() {
     setIsGenerating(true);
     setError(null);
 
-    const effectiveCount = Math.min(questionCount, 20);
+    const effectiveCount = questionCount;
 
     try {
       const topic = topics[Math.floor(Math.random() * topics.length)];
@@ -281,7 +281,7 @@ export default function MockExamPage() {
                       key={i}
                       onClick={() => {
                         setSelectedSection(i);
-                        setQuestionCount(Math.min(sec.questions ?? 10, 20));
+                        setQuestionCount(sec.questions ?? 10);
                       }}
                       className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between ${
                         selectedSection === i
@@ -304,7 +304,7 @@ export default function MockExamPage() {
             <div className="space-y-2">
               <label className="text-xs text-zinc-500 font-medium">練習問題数</label>
               <div className="flex gap-2">
-                {[5, 10, 15, 20].map((n) => (
+                {[5, 10, 20, 30, 50, 100].map((n) => (
                   <button
                     key={n}
                     onClick={() => setQuestionCount(n)}
@@ -367,7 +367,10 @@ export default function MockExamPage() {
               className="w-full inline-flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-sm disabled:opacity-50 transition-colors"
             >
               {isGenerating ? (
-                <span className="animate-pulse">AI が問題を生成中...</span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="spinner" />
+                  AI が {questionCount} 問を生成中...
+                </span>
               ) : (
                 <>
                   <Play size={14} />

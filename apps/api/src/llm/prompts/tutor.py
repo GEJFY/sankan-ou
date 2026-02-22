@@ -9,6 +9,25 @@ LEVEL_DESCRIPTIONS = {
     6: "公認会計士・専門家レベルで、規準の条文や判例、国際基準との比較を含めた高度な解説をしてください。",
 }
 
+MARKDOWN_INSTRUCTION = """
+【出力フォーマット】
+- 必ずMarkdown形式で出力してください
+- 見出しは ## や ### を使ってください
+- 箇条書きは - を使ってください
+- 重要語句は **太字** にしてください
+- 表は | 区切りで作成してください
+- コード例がある場合は ``` で囲んでください
+
+【フォローアップ質問】
+回答の最後に必ず以下の形式でフォローアップ質問を3つ提案してください:
+
+---
+**関連する質問:**
+1. [質問1]
+2. [質問2]
+3. [質問3]
+"""
+
 
 def build_explain_prompt(
     concept: str,
@@ -31,7 +50,9 @@ CIA（公認内部監査人）、CISA（公認情報システム監査人）、C
 解説のルール:
 - 構造化された見出しを使う
 - 具体例を必ず含める
-- 最後に「ポイントまとめ」を3つ以内で箇条書き{courses_str}"""
+- 最後に「ポイントまとめ」を3つ以内で箇条書き
+- 関連するCIA/CISA/CFEの出題領域も言及する{courses_str}
+{MARKDOWN_INSTRUCTION}"""
 
     user = f"以下の概念について解説してください:\n\n{concept}"
 
@@ -40,7 +61,7 @@ CIA（公認内部監査人）、CISA（公認情報システム監査人）、C
 
 def build_compare_prompt(concept: str) -> tuple[str, str]:
     """3資格比較表生成プロンプト"""
-    system = """あなたはGRC分野の専門家で、CIA/CISA/CFEの3資格すべてに精通しています。
+    system = f"""あなたはGRC分野の専門家で、CIA/CISA/CFEの3資格すべてに精通しています。
 指定された概念について、3資格それぞれの観点から比較表を作成してください。
 
 フォーマット:
@@ -48,7 +69,8 @@ def build_compare_prompt(concept: str) -> tuple[str, str]:
 |------|-----|------|-----|
 | ... | ... | ... | ... |
 
-比較表の後に、3資格を横断的に学ぶメリットを簡潔に説明してください。"""
+比較表の後に、3資格を横断的に学ぶメリットを簡潔に説明してください。
+{MARKDOWN_INSTRUCTION}"""
 
     user = f"以下の概念について、CIA/CISA/CFEの3資格比較表を作成してください:\n\n{concept}"
 
@@ -61,7 +83,7 @@ def build_socratic_prompt(
     is_correct: bool,
 ) -> tuple[str, str]:
     """ソクラテス式対話 - 不正解の根本原因を掘り下げる"""
-    system = """あなたはGRC分野のソクラテス式教師です。
+    system = f"""あなたはGRC分野のソクラテス式教師です。
 生徒が不正解だった場合、答えを直接教えるのではなく、質問を通じて正解に導いてください。
 
 対話のルール:
@@ -70,7 +92,8 @@ def build_socratic_prompt(
 - ヒントを段階的に与える
 - 最終的に生徒自身が正解に到達するよう導く
 - 各応答は2-3つの誘導質問で構成する
-- 最後に「考えてみましょう」で締める"""
+- 最後に「考えてみましょう」で締める
+{MARKDOWN_INSTRUCTION}"""
 
     if is_correct:
         user = f"""概念: {concept}
@@ -104,7 +127,8 @@ def build_knowledge_bridge_prompt(
 - {to_course}での同じ/類似概念を特定
 - 用語の違い・ニュアンスの差を明確化
 - 共通点と相違点を表形式で整理
-- 「{from_course}で学んだ○○は、{to_course}では△△として登場する」形式で説明"""
+- 「{from_course}で学んだ○○は、{to_course}では△△として登場する」形式で説明
+{MARKDOWN_INSTRUCTION}"""
 
     user = f"概念「{concept}」を{from_course}から{to_course}にブリッジしてください。"
 

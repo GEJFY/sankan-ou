@@ -8,6 +8,7 @@ from sqlalchemy import case, func, select
 from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview, ReviewLog
 from src.models.course import Course, Topic
+from src.models.enrollment import UserEnrollment
 from src.services.session_service import session_service
 from src.schemas.dashboard import (
     CourseSummary,
@@ -23,12 +24,28 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
 async def get_summary(db: DbSession, current_user: CurrentUser) -> DashboardSummaryResponse:
-    """3資格別進捗サマリー"""
+    """登録済み資格の進捗サマリー（未登録コースは表示しない）"""
     now = datetime.now(timezone.utc)
+
+    # ユーザーが登録しているコースIDを取得
+    enrolled_result = await db.execute(
+        select(UserEnrollment.course_id).where(
+            UserEnrollment.user_id == current_user.id,
+            UserEnrollment.is_active == True,  # noqa: E712
+        )
+    )
+    enrolled_course_ids = set(enrolled_result.scalars().all())
+
     courses_result = await db.execute(
         select(Course).where(Course.is_active == True).order_by(Course.sort_order)  # noqa: E712
     )
-    courses = courses_result.scalars().all()
+    all_courses = courses_result.scalars().all()
+
+    # 登録済みコースのみフィルタ（登録が0件の場合はデフォルトコースを表示）
+    if enrolled_course_ids:
+        courses = [c for c in all_courses if c.id in enrolled_course_ids]
+    else:
+        courses = [c for c in all_courses if getattr(c, "is_default", True)]
 
     summaries = []
     for course in courses:

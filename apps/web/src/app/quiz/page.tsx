@@ -225,7 +225,7 @@ export default function QuizPage() {
             <div className="space-y-2">
               <p className="text-xs text-zinc-500 text-center font-medium">問題数</p>
               <div className="flex gap-2 justify-center">
-                {[5, 10, 15, 20].map((n) => (
+                {[5, 10, 15, 20, 30, 50].map((n) => (
                   <button
                     key={n}
                     onClick={() => setQuestionCount(n)}
@@ -280,11 +280,20 @@ export default function QuizPage() {
           </div>
         )}
 
-        {/* Generating */}
+        {/* Generating - with spinner and progress */}
         {isGenerating && (
-          <div className="text-center py-20">
-            <div className="animate-pulse text-zinc-500 text-sm">
-              AI が問題を生成中...
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="spinner spinner-lg" />
+              <div className="text-zinc-400 text-sm font-medium">
+                AI が {questionCount} 問を生成中...
+              </div>
+              <div className="text-zinc-600 text-xs">
+                {questionCount > 10 ? "バッチ処理中です。約30-60秒かかります" : "約10-20秒かかります"}
+              </div>
+              <div className="w-full max-w-xs h-1 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-full w-1/4 bg-blue-500 rounded-full progress-indeterminate" />
+              </div>
             </div>
           </div>
         )}

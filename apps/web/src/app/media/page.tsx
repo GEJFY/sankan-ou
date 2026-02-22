@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Sparkles } from "lucide-react";
 
 interface Slide {
   slide_number: number;
@@ -35,6 +35,8 @@ const COURSES = [
   { code: "CFE", color: "#7c3aed" },
 ];
 
+const SLIDE_COUNT_OPTIONS = [5, 8, 10, 15] as const;
+
 export default function MediaPage() {
   const [mode, setMode] = useState<MediaMode>("slides");
   const [courseCode, setCourseCode] = useState("CIA");
@@ -44,6 +46,7 @@ export default function MediaPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState("");
   const [additionalPrompt, setAdditionalPrompt] = useState("");
+  const [slideCount, setSlideCount] = useState<number>(5);
 
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -62,8 +65,12 @@ export default function MediaPage() {
       })
       .then((data) => {
         if (data) {
-          setTopics(data.topics);
-          if (data.topics.length > 0) setSelectedTopic(data.topics[0].name);
+          // カテゴリ名で重複を除去
+          const unique = Array.from(
+            new Map(data.topics.map((t) => [t.name, t])).values()
+          );
+          setTopics(unique);
+          if (unique.length > 0) setSelectedTopic(unique[0].name);
         }
       })
       .catch(() => setTopics([]));
@@ -84,7 +91,7 @@ export default function MediaPage() {
         body: JSON.stringify({
           topic: getTopicText(),
           course_code: courseCode,
-          slide_count: 5,
+          slide_count: slideCount,
         }),
       });
       setSlides(data.slides);
@@ -118,6 +125,28 @@ export default function MediaPage() {
     }
     setIsGenerating(false);
   };
+
+  const downloadSlides = useCallback(() => {
+    if (slides.length === 0) return;
+    const exportData = {
+      course_code: courseCode,
+      topic: selectedTopic,
+      generated_at: new Date().toISOString(),
+      slide_count: slides.length,
+      slides: slides.map(({ image_base64, image_mime_type, ...rest }) => rest),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `slides_${courseCode}_${selectedTopic.replace(/\s+/g, "_")}_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [slides, courseCode, selectedTopic]);
 
   const courseColor = COURSES.find((c) => c.code === courseCode)?.color || "#666";
 
@@ -196,11 +225,33 @@ export default function MediaPage() {
             </div>
           )}
 
+          {/* Slide count selector (slides mode only) */}
+          {mode === "slides" && (
+            <div className="space-y-2">
+              <p className="text-xs text-zinc-500 font-medium">スライド枚数</p>
+              <div className="flex gap-2">
+                {SLIDE_COUNT_OPTIONS.map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => setSlideCount(count)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      slideCount === count
+                        ? "bg-blue-600 text-white"
+                        : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600"
+                    }`}
+                  >
+                    {count}枚
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Additional prompt */}
           <div className="space-y-2">
             <p className="text-xs text-zinc-500 font-medium">
               追加プロンプト（任意）
-              <span className="text-zinc-600 ml-1">— 内容を詳細に指定</span>
+              <span className="text-zinc-600 ml-1">-- 内容を詳細に指定</span>
             </p>
             <div className="flex gap-2">
               <input
@@ -221,22 +272,78 @@ export default function MediaPage() {
           </div>
         </div>
 
+        {/* Progress indicator during generation */}
+        {isGenerating && (
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="spinner spinner-lg" />
+              <div className="text-center space-y-2">
+                <p className="text-sm font-medium text-zinc-200">
+                  {mode === "slides"
+                    ? `AIがスライドを生成中... (${slideCount}枚)`
+                    : "AIが音声スクリプトを生成中..."}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  約10-20秒かかります。しばらくお待ちください。
+                </p>
+              </div>
+              {/* Animated progress bar */}
+              <div className="w-full max-w-xs bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full"
+                  style={{
+                    animation: "progressIndeterminate 2s ease-in-out infinite",
+                    width: "40%",
+                  }}
+                />
+              </div>
+            </div>
+            <style jsx>{`
+              @keyframes progressIndeterminate {
+                0% {
+                  transform: translateX(-100%);
+                }
+                50% {
+                  transform: translateX(150%);
+                }
+                100% {
+                  transform: translateX(-100%);
+                }
+              }
+            `}</style>
+          </div>
+        )}
+
         {/* Slides display */}
-        {mode === "slides" && slides.length > 0 && (
+        {mode === "slides" && slides.length > 0 && !isGenerating && (
           <div className="space-y-4">
+            {/* Slide header with download button */}
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-medium text-zinc-400">
+                生成結果 ({slides.length}枚)
+              </h3>
+              <button
+                onClick={downloadSlides}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-xs text-zinc-300 transition-colors"
+              >
+                <Download size={12} />
+                ダウンロード (JSON)
+              </button>
+            </div>
+
             <div
-              className="bg-zinc-900/50 rounded-2xl border p-8 min-h-[300px] flex flex-col justify-between"
+              className="bg-zinc-900/50 rounded-2xl border p-8 min-h-90 flex flex-col justify-between"
               style={{ borderColor: `${courseColor}40` }}
             >
               <div>
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <span
-                    className="px-2 py-0.5 rounded text-[11px] font-semibold text-white"
+                    className="px-2.5 py-1 rounded text-[11px] font-semibold text-white tracking-wide"
                     style={{ backgroundColor: courseColor }}
                   >
                     {courseCode}
                   </span>
-                  <span className="text-sm text-zinc-500 tabular-nums">
+                  <span className="text-sm text-zinc-500 tabular-nums font-medium">
                     {currentSlide + 1} / {slides.length}
                   </span>
                 </div>
@@ -248,15 +355,22 @@ export default function MediaPage() {
                       alt={slides[currentSlide]?.title || "スライド"}
                       className="w-full rounded-xl"
                     />
-                    <h2 className="text-base font-semibold text-zinc-200">{slides[currentSlide]?.title}</h2>
+                    <h2 className="text-lg font-bold text-zinc-100 leading-snug">
+                      {slides[currentSlide]?.title}
+                    </h2>
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-lg font-semibold text-zinc-100 mb-4">{slides[currentSlide]?.title}</h2>
-                    <ul className="space-y-2">
+                    <h2 className="text-xl font-bold text-zinc-50 mb-5 leading-tight">
+                      {slides[currentSlide]?.title}
+                    </h2>
+                    <ul className="space-y-3">
                       {slides[currentSlide]?.content?.map((item, i) => (
-                        <li key={i} className="flex gap-2.5 text-sm text-zinc-300">
-                          <span className="text-blue-400 mt-0.5">&#8226;</span>
+                        <li key={i} className="flex gap-3 text-sm text-zinc-300 leading-relaxed">
+                          <span
+                            className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: courseColor }}
+                          />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -265,7 +379,8 @@ export default function MediaPage() {
                 )}
               </div>
               {slides[currentSlide]?.notes && (
-                <div className="mt-4 text-xs text-zinc-500 bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3">
+                <div className="mt-6 text-xs text-zinc-400 bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 leading-relaxed">
+                  <span className="text-zinc-500 font-medium">Notes: </span>
                   {slides[currentSlide].notes}
                 </div>
               )}
@@ -304,7 +419,7 @@ export default function MediaPage() {
         )}
 
         {/* Audio script display */}
-        {mode === "audio" && audioSections.length > 0 && (
+        {mode === "audio" && audioSections.length > 0 && !isGenerating && (
           <div className="space-y-4">
             <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
               <h2 className="text-base font-semibold text-zinc-200 mb-4">{audioTitle}</h2>
