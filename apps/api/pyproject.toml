@@ -24,9 +24,10 @@ dependencies = [
     "pgvector>=0.3",
     # SRS
     "fsrs>=6.0",
-    # LLM (Azure AI Foundry - OpenAI + Anthropic)
+    # LLM (Azure AI Foundry - OpenAI + Anthropic + Google Gemini)
     "openai>=1.50",
     "anthropic>=0.40",
+    "google-genai>=1.0",
     # Validation / Config
     "pydantic>=2.7",
     "pydantic-settings>=2.4",

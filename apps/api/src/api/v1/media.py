@@ -1,11 +1,15 @@
 """Media endpoints - 音声/スライド学習"""
 
 import json
+import logging
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.llm.client import generate, MODEL_SONNET
+from src.llm.gemini_client import generate_slide_image, is_gemini_available
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -66,11 +70,29 @@ async def generate_slides(body: GenerateSlideRequest):
     except (json.JSONDecodeError, IndexError):
         slides = [{"slide_number": 1, "title": "生成エラー", "content": [result[:200]], "notes": ""}]
 
+    # Gemini利用可能時: 各スライドにビジュアル画像を付与
+    if is_gemini_available():
+        for slide in slides:
+            try:
+                img_result = await generate_slide_image(
+                    topic=body.topic,
+                    course_code=body.course_code,
+                    slide_number=slide.get("slide_number", 1),
+                    total_slides=len(slides),
+                    content_points=slide.get("content", []),
+                )
+                if img_result.get("image_base64"):
+                    slide["image_base64"] = img_result["image_base64"]
+                    slide["image_mime_type"] = img_result["mime_type"]
+            except Exception as e:
+                logger.warning(f"Gemini image generation failed for slide {slide.get('slide_number')}: {e}")
+
     return {
         "topic": body.topic,
         "course_code": body.course_code,
         "slide_count": len(slides),
         "slides": slides,
+        "has_images": any(s.get("image_base64") for s in slides),
     }
 
 
@@ -138,10 +160,12 @@ JSON形式で出力:
 @router.get("/capabilities")
 async def get_media_capabilities():
     """メディア機能の対応状況"""
+    gemini_available = is_gemini_available()
     return {
         "slides": {
             "status": "available",
-            "description": "AI自動スライド生成 (テキスト形式)",
+            "description": "AI自動スライド生成" + (" (テキスト+画像: Gemini)" if gemini_available else " (テキスト形式)"),
+            "has_image_generation": gemini_available,
             "export_formats": ["json"],
             "planned_formats": ["pptx", "pdf"],
         },

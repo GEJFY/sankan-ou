@@ -30,6 +30,11 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const loadData = async () => {
     setError(null);
@@ -92,6 +97,42 @@ export default function SettingsPage() {
       setMessage(e instanceof Error ? e.message : "解除に失敗しました");
     }
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordMessage(null);
+
+    if (newPassword.length < 8) {
+      setPasswordError("新しいパスワードは8文字以上で入力してください");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("新しいパスワードが一致しません");
+      return;
+    }
+
+    try {
+      await apiFetch("/auth/password", {
+        method: "PUT",
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      setPasswordMessage("パスワードを変更しました");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e) {
+      setPasswordError(
+        e instanceof Error ? e.message : "パスワード変更に失敗しました"
+      );
+    }
+    setTimeout(() => {
+      setPasswordMessage(null);
+      setPasswordError(null);
+    }, 5000);
   };
 
   const enrolledCourseIds = new Set(
@@ -231,6 +272,51 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {/* パスワード変更 */}
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <h2 className="text-lg font-semibold mb-4">パスワード変更</h2>
+          {passwordMessage && (
+            <div className="bg-green-900/30 border border-green-800 rounded-lg p-3 text-green-300 text-sm mb-4">
+              {passwordMessage}
+            </div>
+          )}
+          {passwordError && (
+            <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-red-300 text-sm mb-4">
+              {passwordError}
+            </div>
+          )}
+          <div className="space-y-3 max-w-sm">
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="現在のパスワード"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="新しいパスワード（8文字以上）"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="新しいパスワード（確認）"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={handleChangePassword}
+              disabled={!currentPassword || !newPassword || !confirmPassword}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm disabled:opacity-50"
+            >
+              パスワードを変更
+            </button>
+          </div>
+        </div>
 
         {/* FSRS設定説明 */}
         <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">

@@ -2,8 +2,8 @@
 
 import json
 
-from fastapi import APIRouter, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy import func, select
 
 from src.deps import CurrentUser, DbSession
 from src.llm.client import MODEL_SONNET, generate
@@ -20,6 +20,46 @@ from src.schemas.question import (
 )
 
 router = APIRouter(prefix="/questions", tags=["questions"])
+
+
+@router.get("/bank", response_model=GenerateQuestionsResponse)
+async def get_question_bank(
+    db: DbSession,
+    current_user: CurrentUser,
+    topic_id: str = Query(..., description="トピックID"),
+    count: int = Query(5, ge=1, le=20, description="問題数"),
+):
+    """DB保存済みの問題をランダムに取得"""
+    topic = await db.get(Topic, topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="トピックが見つかりません")
+
+    course = await db.get(Course, topic.course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="コースが見つかりません")
+
+    stmt = (
+        select(Question)
+        .where(Question.topic_id == topic.id)
+        .order_by(func.random())
+        .limit(count)
+    )
+    result = await db.execute(stmt)
+    questions = result.scalars().all()
+
+    return GenerateQuestionsResponse(
+        questions=[
+            QuestionOut(
+                id=q.id,
+                stem=q.stem,
+                choices=[ChoiceOut(**c) for c in q.choices],
+                explanation=q.explanation,
+                difficulty=q.difficulty,
+                course_code=course.code,
+            )
+            for q in questions
+        ]
+    )
 
 
 @router.post("/generate", response_model=GenerateQuestionsResponse)
