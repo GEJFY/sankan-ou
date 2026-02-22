@@ -14,6 +14,7 @@ class CourseOut(BaseModel):
     description: str
     color: str
     is_active: bool
+    is_default: bool = False
 
     model_config = {"from_attributes": True}
 

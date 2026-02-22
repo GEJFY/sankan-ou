@@ -58,9 +58,13 @@ export default function ChatInterface() {
       };
 
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("sankanou_token") : null;
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const res = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(bodyMap[mode] || { message, concept: message, level }),
         });
 
@@ -85,7 +89,11 @@ export default function ChatInterface() {
               if (data === "[DONE]") continue;
               try {
                 const parsed = JSON.parse(data);
-                accumulated += parsed.text;
+                if (parsed.error) {
+                  accumulated += `[エラー] ${parsed.error}`;
+                } else {
+                  accumulated += parsed.text || "";
+                }
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1] = {
@@ -114,7 +122,7 @@ export default function ChatInterface() {
 
       setIsStreaming(false);
     },
-    [level, isStreaming]
+    [level, isStreaming, mode]
   );
 
   return (

@@ -29,16 +29,19 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   const loadData = async () => {
+    setError(null);
     try {
       const [enrollData, courseData] = await Promise.all([
         apiFetch<{ enrollments: Enrollment[] }>("/enrollments"),
-        apiFetch<{ courses: CourseInfo[] }>("/courses"),
+        apiFetch<{ courses: CourseInfo[] }>("/courses?include_all=true"),
       ]);
       setEnrollments(enrollData.enrollments);
       setCourses(courseData.courses);
-    } catch {
-      // pass
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "データの取得に失敗しました");
     }
     setIsLoading(false);
   };
@@ -112,6 +115,12 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold">設定</h1>
           <p className="text-gray-500 mt-1">コース登録・学習設定</p>
         </div>
+
+        {error && (
+          <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-red-300 text-sm">
+            {error}
+          </div>
+        )}
 
         {message && (
           <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-3 text-blue-300 text-sm">

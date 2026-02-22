@@ -19,6 +19,7 @@ class Course(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # 試験設定 (パート数, 問題数, 合格ライン等)
     exam_config: Mapped[dict | None] = mapped_column(JSONB, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
+    is_default: Mapped[bool] = mapped_column(default=False)  # デフォルト表示（CIA/CISA/CFE）
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships

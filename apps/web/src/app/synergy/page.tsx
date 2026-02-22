@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import Flashcard from "@/components/study/flashcard";
 import RatingButtons from "@/components/study/rating-buttons";
@@ -54,7 +54,7 @@ export default function SynergyPage() {
   const currentCard = cards[currentIdx];
   const isComplete = currentIdx >= cards.length && cards.length > 0;
 
-  const handleRate = async (rating: 1 | 2 | 3 | 4) => {
+  const handleRate = useCallback(async (rating: 1 | 2 | 3 | 4) => {
     if (!currentCard) return;
     if (rating >= 3) setCorrect((c) => c + 1);
     setReviewed((r) => r + 1);
@@ -73,7 +73,7 @@ export default function SynergyPage() {
 
     setIsFlipped(false);
     setCurrentIdx((i) => i + 1);
-  };
+  }, [currentCard]);
 
   // キーボードショートカット
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function SynergyPage() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isFlipped, currentCard]);
+  }, [isFlipped, handleRate]);
 
   if (isLoading) {
     return (
