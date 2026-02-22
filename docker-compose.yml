@@ -25,6 +25,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://sankanou:sankanou_dev@db:5432/sankanou
+      PYTHONPATH: /app
     volumes:
       - ./apps/api:/app
     depends_on:

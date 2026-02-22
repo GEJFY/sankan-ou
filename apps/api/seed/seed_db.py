@@ -578,7 +578,7 @@ async def seed_demo_user(db: AsyncSession, course_ids: dict[str, uuid.UUID]) -> 
     user = User(
         id=DEMO_USER_ID,
         email="demo@sankanou.dev",
-        hashed_password="$2b$12$demo_hashed_password_placeholder",
+        hashed_password="$2b$12$jFvsXsKy3pqzqp/FVPpx5.uiglUbbtruuBzbcm87h2mLWvSRKKqDG",
         display_name="Demo User",
         role="learner",
     )
