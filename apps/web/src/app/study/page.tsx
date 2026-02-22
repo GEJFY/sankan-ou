@@ -117,8 +117,14 @@ export default function StudyPage() {
           <RatingButtons onRate={submitRating} />
         )}
 
-        <div className="text-xs text-gray-600 mt-4">
-          ショートカット: Space=フリップ, 1=Again, 2=Hard, 3=Good, 4=Easy
+        <div className="text-xs text-gray-600 mt-4 space-y-1 text-center">
+          <div>ショートカット: Space=フリップ, 1=Again, 2=Hard, 3=Good, 4=Easy</div>
+          <div className="text-gray-700">
+            <span title="全く思い出せなかった → すぐ再表示">1:Again</span>{" / "}
+            <span title="思い出せたが自信がない → 短い間隔で復習">2:Hard</span>{" / "}
+            <span title="正しく思い出せた → 通常間隔で復習">3:Good</span>{" / "}
+            <span title="即座に思い出せた → 長い間隔で復習">4:Easy</span>
+          </div>
         </div>
       </div>
     </AppLayout>
