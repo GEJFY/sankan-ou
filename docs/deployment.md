@@ -17,7 +17,50 @@ GRC Triple Crown は以下の Azure リソースで構成されます。
 
 - Azure CLI (`az`) がインストール済み
 - `az login` でログイン済み
-- サブスクリプションが選択済み
+- サブスクリプションが選択済み(サブスクリプションを切り替えた/新規契約した場合は下記を実行)
+
+```bash
+az account list --output table          # 利用可能なサブスクリプション一覧
+az account set --subscription "<サブスクリプション名 or ID>"
+az account show --output table          # 選択されていることを確認
+```
+
+`rg-sankanou` 等のリソース名は前提として**存在しない**（＝新規サブスクリプションでは何もない状態）として
+`./deploy.sh` はゼロから全リソースを作成します。`deploy.ps1` は既存リソースへの追加デプロイ専用
+（RG/ACR/DBが存在する前提）なので、新規サブスクリプションでのフル構築には `deploy.sh` を使ってください
+（Windowsの場合は Git Bash / WSL 経由で実行）。
+
+## コスト最適化について
+
+このアプリの月額費用の内訳はおおよそ以下の通りです（アイドル時 = ほぼアクセスがない状態）:
+
+| リソース | アイドル時の月額目安 | 備考 |
+|---------|---------------------|------|
+| Container Apps (API/Web) | ほぼ $0 | `min-replicas=0` でスケールtoゼロ。実際に使った分だけ課金され、少量アクセスなら無料枠内に収まることが多い |
+| **PostgreSQL Flexible Server** | **約 $15-18** | Burstable B1ms(最小SKU)でも**常時起動の時間課金**のため、使っていなくても発生する固定費。Azureにはサーバーレス/自動一時停止のPostgresは無く、`az postgres flexible-server stop`で手動停止するのが唯一の削減手段 |
+| Container Registry (Basic) | 約 $5 | 常時起動の固定費（ACR Basicの最低ライン） |
+| Log Analytics | $0 | `deploy.sh`で`--logs-destination none`にして無効化済み（ライブログは`az containerapp logs show`で引き続き閲覧可） |
+| AI Services (GPT-5等) | 実使用分のみ | トークン課金、固定費なし |
+
+→ **固定費の大半はContainer AppsではなくPostgreSQLとACRです。** Container Appsは正しく`min-replicas=0`
+になっていればアイドル時ほぼ無料なので、体感で「Container Appsが高い」と感じる場合は大抵
+`min-replicas`が0になっていない（`az containerapp show`で確認）か、Log Analyticsの取り込み量が
+多いことが原因です。
+
+### 使わない間だけコストを抑える
+
+スマホ等で試す時だけ動かし、それ以外はDBを止めておくワークフローを想定しています:
+
+```bash
+# 使い終わったら（固定費を月$15-18 → 月$2-3程度のストレージ費用まで削減）
+./azure-db.sh stop
+
+# 次にスマホ等から試す前に（起動に数分かかるので少し待ってからアクセスする）
+./azure-db.sh start
+```
+
+Windows の場合は `azure-db.ps1 stop` / `azure-db.ps1 start` を使用してください。
+Azureの仕様上、7日間停止したままだと自動的に再起動されるので注意してください（その間も課金は発生します）。
 
 ## 自動デプロイ
 

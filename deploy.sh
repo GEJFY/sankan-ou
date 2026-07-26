@@ -56,6 +56,10 @@ echo "   ACR: $ACR_LOGIN_SERVER"
 # ============================================
 echo ""
 echo ">>> Step 3: Creating PostgreSQL Flexible Server..."
+# コスト最適化: Burstable B1ms(最安SKU) + 32GB(最小ストレージ) + 最小バックアップ保持(7日)
+# + ローカル冗長バックアップ(geo-redundantはOFF、コスト2倍になるため)。
+# それでも常時起動である以上、月額 約$15-18 の固定費が発生する。
+# 使わない時間帯は ./azure-db.sh stop で一時停止し、この固定費をストレージ分(月$2-3程度)まで下げられる。
 az postgres flexible-server create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$DB_SERVER_NAME" \
@@ -66,6 +70,8 @@ az postgres flexible-server create \
     --tier Burstable \
     --storage-size 32 \
     --version 16 \
+    --backup-retention 7 \
+    --geo-redundant-backup Disabled \
     --yes \
     --output none
 
@@ -171,10 +177,15 @@ echo "   API image: $ACR_LOGIN_SERVER/api:latest"
 # ============================================
 echo ""
 echo ">>> Step 6: Creating Container Apps environment..."
+# コスト最適化: --logs-destination none でLog Analyticsワークスペースの自動作成を回避する。
+# (デフォルトのままだとログ取り込み量に応じた課金が常時発生する。ライブログは
+#  `az containerapp logs show` で引き続き確認可能。過去ログの検索が必要になった場合のみ
+#  Log Analyticsワークスペースを別途アタッチすること)
 az containerapp env create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$CONTAINER_ENV_NAME" \
     --location "$LOCATION" \
+    --logs-destination none \
     --output none
 
 # ============================================
@@ -292,5 +303,11 @@ echo "  1. Seed DB:"
 echo "     az containerapp exec -g $RESOURCE_GROUP -n $API_APP_NAME --command 'python -m seed.seed_db'"
 echo "  2. Test:  curl $API_URL/api/v1/health"
 echo "  3. Open:  $WEB_URL"
+echo ""
+echo "Cost note: Container Apps は min-replicas=0 でアイドル時ほぼ\$0。"
+echo "固定費の大半は PostgreSQL Flexible Server (常時起動、月額約\$15-18) です。"
+echo "使わない間は DB を止めてコストを抑えられます:"
+echo "  ./azure-db.sh stop    # ストレージ分(月額約\$2-3)まで下げる"
+echo "  ./azure-db.sh start   # スマホ等から試す前に再開 (数分かかります)"
 echo ""
 echo "Tear down: az group delete --name $RESOURCE_GROUP --yes --no-wait"
