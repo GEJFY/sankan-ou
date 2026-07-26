@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,6 +18,12 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("パスワードが一致しません");
+      return;
+    }
+
     setLoading(true);
     try {
       await register(email, password, displayName);
@@ -58,11 +65,13 @@ export default function RegisterPage() {
           )}
 
           <div>
-            <label className="block text-xs text-zinc-500 font-medium mb-1.5">表示名</label>
+            <label htmlFor="register-display-name" className="block text-xs text-zinc-500 font-medium mb-1.5">表示名</label>
             <input
+              id="register-display-name"
               type="text"
               required
               maxLength={100}
+              autoComplete="name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
@@ -71,10 +80,12 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-500 font-medium mb-1.5">メールアドレス</label>
+            <label htmlFor="register-email" className="block text-xs text-zinc-500 font-medium mb-1.5">メールアドレス</label>
             <input
+              id="register-email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
@@ -83,15 +94,32 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード</label>
+            <label htmlFor="register-password" className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード</label>
             <input
+              id="register-password"
               type="password"
               required
               minLength={8}
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
               placeholder="8文字以上"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="register-confirm-password" className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード（確認）</label>
+            <input
+              id="register-confirm-password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
+              placeholder="もう一度入力してください"
             />
           </div>
 

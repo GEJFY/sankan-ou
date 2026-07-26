@@ -68,6 +68,7 @@ export default function DashboardPage() {
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
   const [mockExams, setMockExams] = useState<MockExamResultItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -89,9 +90,20 @@ export default function DashboardPage() {
       } catch {
         // 模試履歴がなくてもダッシュボードは表示
       }
+      setIsLoading(false);
     };
     load();
   }, []);
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-zinc-500 text-sm animate-pulse">読み込み中...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const totalDue =
     dashboard?.courses.reduce((sum, c) => sum + c.due_today, 0) ?? 0;
@@ -198,7 +210,7 @@ export default function DashboardPage() {
           <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-zinc-200">最近の模擬試験</h2>
-              <span className="tooltip-trigger">
+              <span className="tooltip-trigger" tabIndex={0}>
                 <span className="text-zinc-600 cursor-help text-xs">[?]</span>
                 <span className="tooltip-content">過去に受験した模擬試験のスコアと合否結果を表示します。</span>
               </span>

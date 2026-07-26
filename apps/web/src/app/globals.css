@@ -152,9 +152,17 @@ body {
   border-color: #3f3f46 transparent transparent transparent;
 }
 
-.tooltip-trigger:hover .tooltip-content {
+.tooltip-trigger:hover .tooltip-content,
+.tooltip-trigger:focus-within .tooltip-content {
   visibility: visible;
   opacity: 1;
+}
+
+/* Visible focus ring for tooltip triggers navigated via keyboard */
+.tooltip-trigger:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Tooltip below variant - for items near top of screen */

@@ -106,7 +106,7 @@ async def test_get_mock_exam_history(client: AsyncClient, seed_courses):
 
     # 2件保存
     for correct in [6, 8]:
-        await client.post(
+        resp = await client.post(
             "/api/v1/mock-exam/submit",
             headers=_auth_headers(token),
             json={
@@ -116,10 +116,11 @@ async def test_get_mock_exam_history(client: AsyncClient, seed_courses):
                 "correct_count": correct,
                 "passing_score_pct": 60,
                 "time_taken_seconds": 200,
-                "question_ids": [],
-                "answer_indices": [],
+                "question_ids": [f"q{i}" for i in range(10)],
+                "answer_indices": [0] * 10,
             },
         )
+        assert resp.status_code == 200
 
     resp = await client.get(
         "/api/v1/mock-exam/history",
@@ -143,7 +144,7 @@ async def test_get_mock_exam_history_filter(client: AsyncClient, seed_courses):
 
     # CIA 1件, CISA 1件
     for course_id, course_code in [(cia_id, "CIA"), (cisa_id, "CISA")]:
-        await client.post(
+        resp = await client.post(
             "/api/v1/mock-exam/submit",
             headers=_auth_headers(token),
             json={
@@ -153,10 +154,11 @@ async def test_get_mock_exam_history_filter(client: AsyncClient, seed_courses):
                 "correct_count": 7,
                 "passing_score_pct": 60,
                 "time_taken_seconds": 200,
-                "question_ids": [],
-                "answer_indices": [],
+                "question_ids": [f"q{i}" for i in range(10)],
+                "answer_indices": [0] * 10,
             },
         )
+        assert resp.status_code == 200
 
     # フィルタなし → 2件
     resp = await client.get(

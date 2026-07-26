@@ -14,7 +14,7 @@ export default function PageHeader({ title, description, tooltip }: PageHeaderPr
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">{title}</h1>
         {tooltip && (
-          <span className="tooltip-trigger">
+          <span className="tooltip-trigger" tabIndex={0} role="button" aria-label={tooltip}>
             <Info size={16} className="text-zinc-600 cursor-help" />
             <span className="tooltip-content">{tooltip}</span>
           </span>

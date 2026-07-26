@@ -20,6 +20,8 @@ import {
   Info,
   Sun,
   Moon,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -96,6 +98,9 @@ export default function Sidebar() {
   // Theme state: "dark" (default) or "light"
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
+  // Mobile drawer open/closed state (sidebar is an off-canvas drawer below md:)
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   // Initialize theme from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("theme");
@@ -108,6 +113,11 @@ export default function Sidebar() {
     }
   }, []);
 
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -116,8 +126,42 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-[260px] bg-zinc-950 border-r border-zinc-800/60 min-h-screen flex flex-col">
-      {/* Logo area */}
+    <>
+      {/* Mobile hamburger toggle — hidden on md+ where the sidebar is always visible */}
+      {!isMobileOpen && (
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          aria-label="メニューを開く"
+          className="md:hidden fixed top-4 left-4 z-40 p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 shadow-lg"
+        >
+          <Menu size={18} />
+        </button>
+      )}
+
+      {/* Mobile overlay backdrop */}
+      {isMobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/60 z-40"
+          onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`w-[260px] max-w-[85vw] bg-zinc-950 border-r border-zinc-800/60 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-in-out md:static md:z-auto md:translate-x-0 ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Mobile close button */}
+        <button
+          onClick={() => setIsMobileOpen(false)}
+          aria-label="メニューを閉じる"
+          className="md:hidden absolute top-4 right-4 p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 transition"
+        >
+          <X size={16} />
+        </button>
+
+        {/* Logo area */}
       <div className="px-5 pt-6 pb-5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -139,7 +183,7 @@ export default function Sidebar() {
         {NAV_GROUPS.map((group, gi) => (
           <div key={gi}>
             {group.title && (
-              <div className="text-[10px] uppercase tracking-[0.08em] text-zinc-600 font-medium px-3 pt-5 pb-1.5">
+              <div className="text-[10px] uppercase tracking-[0.08em] text-zinc-500 font-medium px-3 pt-5 pb-1.5">
                 {group.title}
               </div>
             )}
@@ -167,10 +211,10 @@ export default function Sidebar() {
                     }`}
                   />
                   <span className="flex-1">{item.label}</span>
-                  <span className={tooltipClass}>
+                  <span className={tooltipClass} tabIndex={0} role="button" aria-label={item.desc}>
                     <Info
                       size={12}
-                      className="text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-help"
+                      className="text-zinc-700 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity cursor-help"
                     />
                     <span className="tooltip-content">{item.desc}</span>
                   </span>
@@ -221,6 +265,7 @@ export default function Sidebar() {
               <button
                 onClick={toggleTheme}
                 title={theme === "dark" ? "ライトモードに切替" : "ダークモードに切替"}
+                aria-label="テーマを切り替える"
                 className="p-1.5 rounded-md text-zinc-600 hover:text-amber-400 hover:bg-zinc-800/60 transition"
               >
                 {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
@@ -229,6 +274,7 @@ export default function Sidebar() {
               <button
                 onClick={logout}
                 title="ログアウト"
+                aria-label="ログアウト"
                 className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800/60 transition"
               >
                 <LogOut size={14} />
@@ -245,13 +291,14 @@ export default function Sidebar() {
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-[10px] text-zinc-600">{code}</span>
+              <span className="text-[10px] text-zinc-500">{code}</span>
             </div>
           ))}
         </div>
 
         <p className="text-[10px] text-zinc-700 px-1">v0.5.0</p>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -21,6 +21,7 @@ class PredictionResponse(BaseModel):
     total_topics: int
     studied_topics: int
     recommendation: str
+    background_note: str | None = None
 
 
 class ROIResponse(BaseModel):

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PageHeader from "@/components/ui/page-header";
 import Flashcard from "@/components/study/flashcard";
@@ -9,7 +9,11 @@ import StudyProgress from "@/components/study/study-progress";
 import { useStudySession } from "@/hooks/use-study-session";
 import { RotateCcw } from "lucide-react";
 
+const BATCH_SIZE_OPTIONS = [5, 10, 25] as const;
+
 export default function StudyPage() {
+  const [batchSize, setBatchSize] = useState<number>(25);
+
   const {
     currentCard,
     isFlipped,
@@ -22,7 +26,7 @@ export default function StudyPage() {
     flipCard,
     submitRating,
     refetch,
-  } = useStudySession();
+  } = useStudySession(undefined, batchSize);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -111,6 +115,23 @@ export default function StudyPage() {
           tooltip="FSRSアルゴリズムが各カードの最適な復習タイミングを計算します。評価に応じて次回の復習間隔が調整されます。"
         />
 
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500">1セッションの枚数:</span>
+          {BATCH_SIZE_OPTIONS.map((n) => (
+            <button
+              key={n}
+              onClick={() => setBatchSize(n)}
+              className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                batchSize === n
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600"
+              }`}
+            >
+              {n}枚
+            </button>
+          ))}
+        </div>
+
         <StudyProgress
           current={reviewed}
           total={cards.length}
@@ -132,19 +153,19 @@ export default function StudyPage() {
             ショートカット: Space = フリップ, 1-4 = 評価
           </div>
           <div className="flex gap-4 justify-center text-[11px]">
-            <span className="tooltip-trigger cursor-help text-red-400/70">
+            <span className="tooltip-trigger cursor-help text-red-400/70" tabIndex={0}>
               1: Again
               <span className="tooltip-content">全く思い出せなかった。すぐに再表示されます。</span>
             </span>
-            <span className="tooltip-trigger cursor-help text-orange-400/70">
+            <span className="tooltip-trigger cursor-help text-orange-400/70" tabIndex={0}>
               2: Hard
               <span className="tooltip-content">思い出せたが自信がない。短い間隔で復習します。</span>
             </span>
-            <span className="tooltip-trigger cursor-help text-blue-400/70">
+            <span className="tooltip-trigger cursor-help text-blue-400/70" tabIndex={0}>
               3: Good
               <span className="tooltip-content">正しく思い出せた。通常の間隔で復習します。</span>
             </span>
-            <span className="tooltip-trigger cursor-help text-emerald-400/70">
+            <span className="tooltip-trigger cursor-help text-emerald-400/70" tabIndex={0}>
               4: Easy
               <span className="tooltip-content">即座に思い出せた。長い間隔で復習します。</span>
             </span>

@@ -2,12 +2,12 @@
 
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from loguru import logger
-
 from pydantic import BaseModel, Field
 
+from src.deps import CurrentUser
 from src.llm.client import MODEL_SONNET, stream_generate
 from src.llm.prompts.tutor import (
     build_compare_prompt,
@@ -16,6 +16,7 @@ from src.llm.prompts.tutor import (
     build_socratic_prompt,
 )
 from src.schemas.tutor import ChatRequest, CompareRequest, ExplainRequest
+from src.services.rate_limit import check_user_rate_limit
 
 
 class SocraticRequest(BaseModel):
@@ -31,6 +32,14 @@ class BridgeRequest(BaseModel):
 
 router = APIRouter(prefix="/ai-tutor", tags=["ai-tutor"])
 
+# 1ユーザーあたり: 1分間に最大12回のLLM生成呼び出し (ストリーミングSSE系エンドポイント共通)
+_TUTOR_RATE_LIMIT = 12
+_TUTOR_RATE_WINDOW_SECONDS = 60.0
+
+
+def _throttle(current_user: CurrentUser) -> None:
+    check_user_rate_limit("ai-tutor", current_user.id, _TUTOR_RATE_LIMIT, _TUTOR_RATE_WINDOW_SECONDS)
+
 
 async def sse_wrapper(generator):
     """SSE format wrapper with error handling"""
@@ -39,12 +48,13 @@ async def sse_wrapper(generator):
             yield f"data: {json.dumps({'text': chunk}, ensure_ascii=False)}\n\n"
     except Exception as e:
         logger.error(f"SSE stream error: {e}")
-        yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+        error_payload = {"error": "AIの応答生成中にエラーが発生しました。しばらくしてから再度お試しください。"}
+        yield f"data: {json.dumps(error_payload, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
 
 
-@router.post("/explain")
-async def explain_concept(body: ExplainRequest):
+@router.post("/explain", dependencies=[Depends(_throttle)])
+async def explain_concept(body: ExplainRequest, current_user: CurrentUser):
     """概念解説 (SSEストリーミング)"""
     system, user_prompt = build_explain_prompt(
         concept=body.concept,
@@ -63,8 +73,8 @@ async def explain_concept(body: ExplainRequest):
     )
 
 
-@router.post("/compare")
-async def compare_concepts(body: CompareRequest):
+@router.post("/compare", dependencies=[Depends(_throttle)])
+async def compare_concepts(body: CompareRequest, current_user: CurrentUser):
     """3資格比較表生成 (SSEストリーミング)"""
     system, user_prompt = build_compare_prompt(body.concept)
 
@@ -79,8 +89,8 @@ async def compare_concepts(body: CompareRequest):
     )
 
 
-@router.post("/chat")
-async def chat(body: ChatRequest):
+@router.post("/chat", dependencies=[Depends(_throttle)])
+async def chat(body: ChatRequest, current_user: CurrentUser):
     """一般Q&A (SSEストリーミング)"""
     from src.llm.prompts.tutor import LEVEL_DESCRIPTIONS, MARKDOWN_INSTRUCTION
 
@@ -102,8 +112,8 @@ async def chat(body: ChatRequest):
     )
 
 
-@router.post("/socratic")
-async def socratic_dialogue(body: SocraticRequest):
+@router.post("/socratic", dependencies=[Depends(_throttle)])
+async def socratic_dialogue(body: SocraticRequest, current_user: CurrentUser):
     """ソクラテス式対話 (SSEストリーミング)"""
     system, user_prompt = build_socratic_prompt(
         concept=body.concept,
@@ -122,8 +132,8 @@ async def socratic_dialogue(body: SocraticRequest):
     )
 
 
-@router.post("/bridge")
-async def knowledge_bridge(body: BridgeRequest):
+@router.post("/bridge", dependencies=[Depends(_throttle)])
+async def knowledge_bridge(body: BridgeRequest, current_user: CurrentUser):
     """知識ブリッジ - 資格間の概念マッピング (SSEストリーミング)"""
     system, user_prompt = build_knowledge_bridge_prompt(
         concept=body.concept,

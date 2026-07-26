@@ -1,4 +1,11 @@
-"""Study Session + Score Prediction endpoints"""
+"""Study Session endpoints
+
+合格確率予測(/predictions/*)は src/api/v1/predictions.py が単一の実装元。
+以前はこのファイルにも同名の重複ルートが定義されており、ルーター登録順の関係で
+そちらが常勝ち(predictions.pyの実装が到達不能なデッドコードになる)し、
+かつ UserTopicMastery を更新する呼び出し元がどこにも存在しなかったため、
+合格確率が実際の学習データと無関係に常にほぼ0%を返す不具合があった。
+"""
 
 import uuid
 
@@ -8,7 +15,6 @@ from pydantic import BaseModel, Field
 from src.deps import CurrentUser, DbSession
 from src.services.session_service import (
     mastery_service,
-    score_prediction_service,
     session_service,
 )
 
@@ -89,25 +95,6 @@ async def get_today_stats(db: DbSession, current_user: CurrentUser):
     stats = await session_service.get_today_stats(db, current_user.id)
     streak = await session_service.get_streak_days(db, current_user.id)
     return {**stats, "streak_days": streak}
-
-
-# --- Score Prediction ---
-@router.get("/predictions/{course_id}")
-async def predict_score(course_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
-    """合格確率予測"""
-    result = await score_prediction_service.predict_pass_probability(
-        db, current_user.id, course_id
-    )
-    return result
-
-
-@router.get("/predictions/{course_id}/roi")
-async def get_study_roi(course_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
-    """学習ROI推定"""
-    result = await score_prediction_service.get_study_roi(
-        db, current_user.id, course_id
-    )
-    return result
 
 
 # --- Mastery ---

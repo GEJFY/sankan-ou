@@ -142,8 +142,13 @@ class MasteryService:
             mastery = UserTopicMastery(
                 user_id=user_id,
                 topic_id=topic_id,
+                mastery_score=0,
+                total_reviews=0,
+                correct_reviews=0,
+                avg_response_ms=0,
             )
             db.add(mastery)
+            await db.flush()
 
         mastery.total_reviews += 1
         if is_correct:

@@ -15,7 +15,7 @@ export default function Tooltip({ text, children, position = "top" }: TooltipPro
   };
 
   return (
-    <span className="tooltip-trigger inline-flex">
+    <span className="tooltip-trigger inline-flex" tabIndex={0}>
       {children}
       <span className={`tooltip-content !left-auto !bottom-auto !transform-none ${positionClasses[position]}`}>
         {text}

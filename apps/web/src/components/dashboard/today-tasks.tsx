@@ -16,12 +16,12 @@ export default function TodayTasks({ totalDue, studiedToday }: TodayTasksProps) 
       </h3>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between tooltip-trigger">
+        <div className="flex items-center justify-between tooltip-trigger" tabIndex={0}>
           <span className="text-zinc-400 text-sm">復習カード</span>
           <span className="font-bold text-lg text-zinc-200 tabular-nums">{totalDue}枚</span>
           <span className="tooltip-content">FSRSアルゴリズムが今日復習すべきと判定したカード数。毎日の復習が記憶定着の鍵です。</span>
         </div>
-        <div className="flex items-center justify-between tooltip-trigger">
+        <div className="flex items-center justify-between tooltip-trigger" tabIndex={0}>
           <span className="text-zinc-400 text-sm">学習済み</span>
           <span className="font-bold text-lg text-emerald-400 tabular-nums">
             {studiedToday}枚

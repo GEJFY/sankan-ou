@@ -22,7 +22,7 @@ interface ReviewResult {
   next_review_in_hours: number;
 }
 
-export function useStudySession(courseId?: string) {
+export function useStudySession(courseId?: string, batchSize: number = 25) {
   const [state, setState] = useState<StudyState>({
     cards: [],
     currentIndex: 0,
@@ -39,7 +39,7 @@ export function useStudySession(courseId?: string) {
   const fetchCards = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
-      const params = new URLSearchParams({ limit: "25" });
+      const params = new URLSearchParams({ limit: String(batchSize) });
       if (courseId) params.set("course_id", courseId);
 
       const data = await apiFetch<{ cards: CardWithReview[]; total_due: number }>(
@@ -64,7 +64,7 @@ export function useStudySession(courseId?: string) {
         error: userMsg,
       }));
     }
-  }, [courseId]);
+  }, [courseId, batchSize]);
 
   useEffect(() => {
     fetchCards();

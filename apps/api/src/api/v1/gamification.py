@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query
 
-from src.deps import CurrentUser, DbSession
+from src.deps import CurrentUser, DbSession, RequireAdmin
 from src.services.gamification_service import GamificationService
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
@@ -50,22 +50,24 @@ async def get_badges(db: DbSession, current_user: CurrentUser):
 @router.get("/leaderboard")
 async def get_leaderboard(
     db: DbSession,
+    current_user: CurrentUser,
     limit: int = Query(10, ge=1, le=50),
 ):
-    """XPリーダーボード"""
+    """XPリーダーボード（認証必須。表示名のみ返し、内部IDは公開しない）"""
     svc = GamificationService(db)
-    leaderboard = await svc.get_leaderboard(limit)
+    leaderboard = await svc.get_leaderboard(limit, current_user_id=current_user.id)
     return {"leaderboard": leaderboard}
 
 
 @router.post("/xp/award")
 async def award_xp_manual(
     db: DbSession,
-    current_user: CurrentUser,
+    admin_user: RequireAdmin,
+    target_user_id: str = Query(..., description="XPを付与する対象ユーザーID"),
     amount: int = Query(..., ge=1, le=1000),
     source: str = Query("manual"),
 ):
-    """XP手動付与 (テスト/管理用)"""
+    """XP手動付与 (管理者専用)"""
     svc = GamificationService(db)
-    result = await svc.award_xp(current_user.id, amount, source)
+    result = await svc.award_xp(target_user_id, amount, source, detail=f"admin:{admin_user.id}")
     return result

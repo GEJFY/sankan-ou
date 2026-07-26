@@ -4,43 +4,99 @@
   "color": "#e94560",
   "exam_config": {
     "total_parts": 3,
-    "passing_score": "600/750",
-    "format": "multiple_choice"
+    "passing_score": "600/750（250-750スケール、正答率目安70-75%）",
+    "format": "multiple_choice",
+    "effective": "2025年5月改訂（Global Internal Audit Standards準拠）"
   },
   "topics": [
     {
-      "name": "Part 1: Internal Audit Fundamentals（内部監査の基本）",
+      "name": "Part 1: Internal Audit Fundamentals（内部監査の基礎）",
       "level": 0,
       "weight_pct": 33.3,
       "exam_spec": "125問 / 150分",
       "children": [
-        {"name": "A. 内部監査の目的と権限", "level": 1, "weight_pct": 40},
-        {"name": "B. 倫理と職業専門性", "level": 1, "weight_pct": 25},
-        {"name": "C. ガバナンスとリスクマネジメント", "level": 1, "weight_pct": 20},
-        {"name": "D. 不正リスク", "level": 1, "weight_pct": 12.5}
+        {
+          "name": "A. Foundations of Internal Auditing（内部監査の基盤）",
+          "level": 1,
+          "weight_pct": 35,
+          "keywords": ["内部監査の目的", "内部監査の権限と責任", "内部監査憲章", "アシュアランスとコンサルティング", "独立性の阻害要因", "IIAスリーラインモデル"]
+        },
+        {
+          "name": "B. Ethics and Professionalism（倫理と職業専門性）",
+          "level": 1,
+          "weight_pct": 20,
+          "keywords": ["誠実性", "客観性の阻害", "利益相反", "専門的能力", "正当な注意", "秘密の保持"]
+        },
+        {
+          "name": "C. Governance, Risk Management, and Control（ガバナンス・リスク・コントロール）",
+          "level": 1,
+          "weight_pct": 30,
+          "keywords": ["組織のガバナンス", "組織文化と統制環境", "リスクの種類", "リスクアペタイト", "内部統制の種類", "内部統制フレームワーク"]
+        },
+        {
+          "name": "D. Fraud Risks（不正リスク）",
+          "level": 1,
+          "weight_pct": 15,
+          "keywords": ["不正トライアングル", "不正リスクの識別", "レッドフラグ", "不正防止統制", "内部通報制度", "不正調査技法"]
+        }
       ]
     },
     {
-      "name": "Part 2: Practice of Internal Auditing（内部監査の実務）",
+      "name": "Part 2: Internal Audit Engagement（内部監査の実施）",
       "level": 0,
       "weight_pct": 33.3,
       "exam_spec": "100問 / 120分",
       "children": [
-        {"name": "A. 監査計画", "level": 1, "weight_pct": 35},
-        {"name": "B. 監査業務の実施", "level": 1, "weight_pct": 35},
-        {"name": "C. 監査結果と改善", "level": 1, "weight_pct": 30}
+        {
+          "name": "A. Engagement Planning（業務の計画）",
+          "level": 1,
+          "weight_pct": 50,
+          "keywords": ["業務目的と範囲", "評価規準の設定", "リスクアセスメント", "IT・サイバーリスク", "BCP/DR", "アジャイル監査", "資源計画"]
+        },
+        {
+          "name": "B. Information Gathering, Analysis, and Evaluation（情報の収集・分析・評価）",
+          "level": 1,
+          "weight_pct": 40,
+          "keywords": ["監査証拠の十分性と適切性", "データ分析技術", "AI/RPA活用", "分析的手続", "監査調書", "業務結論の形成"]
+        },
+        {
+          "name": "C. Engagement Supervision and Communication（業務の監督と伝達）",
+          "level": 1,
+          "weight_pct": 10,
+          "keywords": ["監督の責任", "業務調書のレビュー", "エスカレーション", "利害関係者とのコミュニケーション"]
+        }
       ]
     },
     {
-      "name": "Part 3: Business Knowledge for IA（ビジネス知識）",
+      "name": "Part 3: Internal Audit Function（内部監査部門の運営）",
       "level": 0,
       "weight_pct": 33.3,
       "exam_spec": "100問 / 120分",
       "children": [
-        {"name": "A. 一般的なビジネスプロセス", "level": 1, "weight_pct": 40},
-        {"name": "B. 情報テクノロジー", "level": 1, "weight_pct": 30},
-        {"name": "C. 財務管理", "level": 1, "weight_pct": 20},
-        {"name": "D. 組織行動", "level": 1, "weight_pct": 7.5}
+        {
+          "name": "A. Internal Audit Operations（内部監査部門の運営管理）",
+          "level": 1,
+          "weight_pct": 25,
+          "keywords": ["外部委託の管理", "予算・人材・IT資源管理", "内部監査戦略", "CAEと取締役会のコミュニケーション"]
+        },
+        {
+          "name": "B. Internal Audit Plan（内部監査計画）",
+          "level": 1,
+          "weight_pct": 15,
+          "keywords": ["監査ユニバース", "リスクベース監査計画", "他のアシュアランス提供者との連携"]
+        },
+        {
+          "name": "C. Quality of the Internal Audit Function（品質のアシュアランスと改善）",
+          "level": 1,
+          "weight_pct": 15,
+          "keywords": ["QAIP", "内部評価と外部評価", "基準への不適合の開示", "パフォーマンス指標"]
+        },
+        {
+          "name": "D. Engagement Results and Monitoring（業務結果の伝達とモニタリング）",
+          "level": 1,
+          "weight_pct": 45,
+          "keywords": ["監査報告書の要素", "勧告とアクションプラン", "クロージングコミュニケーション", "残余リスクの評価", "リスク受容の伝達", "フォローアップとエスカレーション"]
+        }
       ]
     }
   ]

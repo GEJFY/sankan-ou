@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.gamification import Badge, DailyMission, UserBadge, UserXP, XPLog
+from src.models.user import User
 
 # XP配分テーブル
 XP_TABLE = {
@@ -156,11 +157,16 @@ class GamificationService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_or_create_xp(self, user_id: uuid.UUID) -> UserXP:
-        """ユーザーXPレコード取得（なければ作成）"""
-        result = await self.db.execute(
-            select(UserXP).where(UserXP.user_id == user_id)
-        )
+    async def get_or_create_xp(self, user_id: uuid.UUID, for_update: bool = False) -> UserXP:
+        """ユーザーXPレコード取得（なければ作成）
+
+        for_update=True の場合、行ロック(SELECT ... FOR UPDATE)を取得してから返す。
+        同時に複数リクエストがXPを加算しても更新が失われないようにするため。
+        """
+        stmt = select(UserXP).where(UserXP.user_id == user_id)
+        if for_update:
+            stmt = stmt.with_for_update()
+        result = await self.db.execute(stmt)
         xp = result.scalar_one_or_none()
         if not xp:
             xp = UserXP(user_id=user_id)
@@ -177,7 +183,7 @@ class GamificationService:
         course_code: str | None = None,
     ) -> dict:
         """XP付与 + レベルアップ判定"""
-        xp = await self.get_or_create_xp(user_id)
+        xp = await self.get_or_create_xp(user_id, for_update=True)
         old_level = xp.level
 
         xp.total_xp += amount
@@ -322,12 +328,14 @@ class GamificationService:
         """ミッション進捗更新 + 完了判定"""
         today = date.today()
         result = await self.db.execute(
-            select(DailyMission).where(
+            select(DailyMission)
+            .where(
                 DailyMission.user_id == user_id,
                 DailyMission.mission_date == today,
                 DailyMission.mission_type == mission_type,
                 DailyMission.is_completed == False,
             )
+            .with_for_update()
         )
         missions = result.scalars().all()
         completed = []
@@ -350,6 +358,8 @@ class GamificationService:
         streak_days: int = 0,
         synergy_reviews: int = 0,
         courses_studied: list[str] | None = None,
+        perfect_session: bool = False,
+        session_card_count: int = 0,
     ) -> list[dict]:
         """バッジ獲得条件チェック + 付与"""
         # 既に獲得済みバッジ
@@ -377,6 +387,12 @@ class GamificationService:
             elif cond.get("type") == "synergy_reviews" and synergy_reviews >= cond.get("count", 0):
                 earned = True
             elif cond.get("type") == "triple_course" and courses_studied and len(set(courses_studied)) >= 3:
+                earned = True
+            elif (
+                cond.get("type") == "perfect_session"
+                and perfect_session
+                and session_card_count >= cond.get("min_cards", 0)
+            ):
                 earned = True
 
             if earned:
@@ -411,20 +427,24 @@ class GamificationService:
             for log in logs
         ]
 
-    async def get_leaderboard(self, limit: int = 10) -> list[dict]:
-        """XPリーダーボード"""
+    async def get_leaderboard(self, limit: int = 10, current_user_id: uuid.UUID | None = None) -> list[dict]:
+        """XPリーダーボード（表示名のみ。生のuser_idは外部に出さない）"""
         result = await self.db.execute(
-            select(UserXP).order_by(UserXP.total_xp.desc()).limit(limit)
+            select(UserXP, User.display_name)
+            .join(User, User.id == UserXP.user_id)
+            .order_by(UserXP.total_xp.desc())
+            .limit(limit)
         )
-        entries = result.scalars().all()
+        rows = result.all()
         return [
             {
                 "rank": i + 1,
-                "user_id": str(e.user_id),
-                "total_xp": e.total_xp,
-                "level": e.level,
+                "display_name": display_name,
+                "total_xp": xp.total_xp,
+                "level": xp.level,
+                "is_you": current_user_id is not None and xp.user_id == current_user_id,
             }
-            for i, e in enumerate(entries)
+            for i, (xp, display_name) in enumerate(rows)
         ]
 
 

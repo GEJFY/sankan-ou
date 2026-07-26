@@ -13,6 +13,9 @@ export const COURSE_COLORS: Record<string, string> = {
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003";
 
+/** localStorage key used to persist the auth JWT */
+export const TOKEN_STORAGE_KEY = "sankanou_token";
+
 /** FSRS rating labels */
 export const RATING_LABELS = {
   1: "Again",

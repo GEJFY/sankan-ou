@@ -5,11 +5,43 @@ Azure AI Foundry の統一エンドポイント経由で利用する。
 モデル名のプレフィックスで自動ルーティング。
 """
 
-from collections.abc import AsyncIterator
+import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import TypeVar
 
 from loguru import logger
 
 from src.config import settings
+
+# 全プロバイダー共通のHTTPタイムアウト(秒)。ハングしたプロバイダーが
+# イベントループ/ワーカースロットを無期限に占有しないようにする。
+_LLM_TIMEOUT_SECONDS = 60.0
+
+T = TypeVar("T")
+
+
+async def _with_retry(
+    fn: Callable[[], Awaitable[T]],
+    retries: int = 2,
+    base_delay: float = 0.5,
+) -> T:
+    """一時的なエラー(429/503/タイムアウト系)に対して短い指数バックオフでリトライする"""
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            return await fn()
+        except Exception as e:
+            last_exc = e
+            transient = any(
+                marker in str(e).lower()
+                for marker in ("429", "503", "rate limit", "timeout", "timed out", "overloaded")
+            )
+            if not transient or attempt == retries:
+                raise
+            delay = base_delay * (2**attempt)
+            logger.warning(f"Transient LLM error (attempt {attempt + 1}/{retries + 1}): {e}, retrying in {delay}s")
+            await asyncio.sleep(delay)
+    raise last_exc  # pragma: no cover - unreachable, satisfies type checker
 
 # ============================================
 # 利用可能モデル定義
@@ -46,6 +78,7 @@ def _get_openai_client():
         azure_endpoint=settings.azure_foundry_endpoint,
         api_key=settings.azure_foundry_api_key,
         api_version=settings.azure_foundry_api_version,
+        timeout=_LLM_TIMEOUT_SECONDS,
     )
 
 
@@ -97,6 +130,7 @@ def _get_anthropic_client():
     return AnthropicFoundry(
         api_key=settings.azure_foundry_api_key,
         base_url=f"{settings.azure_foundry_endpoint.rstrip('/')}/anthropic",
+        timeout=_LLM_TIMEOUT_SECONDS,
     )
 
 
@@ -164,17 +198,21 @@ async def generate(
     _validate_credentials()
     logger.info(f"generate: model={model}, max_tokens={max_tokens}")
 
-    # Azure AI Foundry が利用可能なら優先
+    # Azure AI Foundry が利用可能なら優先 (一時的なエラーは同一プロバイダーでリトライしてから切替)
     if _azure_available():
         try:
             if _is_claude(model):
-                return await _anthropic_generate(system, prompt, model, max_tokens, temperature)
+                return await _with_retry(
+                    lambda: _anthropic_generate(system, prompt, model, max_tokens, temperature)
+                )
 
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
-            return await _openai_generate(messages, model, max_tokens, temperature)
+            return await _with_retry(
+                lambda: _openai_generate(messages, model, max_tokens, temperature)
+            )
         except ValueError:
             raise
         except Exception as e:
@@ -226,7 +264,7 @@ async def stream_generate(
             logger.warning(f"Azure LLM stream failed (model={model}): {e}, trying Gemini fallback")
 
     # Gemini フォールバック
-    from src.llm.gemini_client import stream_generate_text, is_gemini_available
+    from src.llm.gemini_client import is_gemini_available, stream_generate_text
 
     if is_gemini_available():
         logger.info("Using Gemini fallback for streaming")

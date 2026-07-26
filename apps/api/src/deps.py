@@ -19,7 +19,6 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ):
     """JWT認証 → Userオブジェクト取得"""
-    from src.models.user import User
     from src.services.auth_service import decode_access_token, get_user_by_id
 
     if credentials is None:
@@ -37,3 +36,13 @@ async def get_current_user(
 
 
 CurrentUser = Annotated["User", Depends(get_current_user)]
+
+
+async def require_admin(current_user: CurrentUser):
+    """管理者権限チェック用の共有依存関数"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="管理者権限が必要です")
+    return current_user
+
+
+RequireAdmin = Annotated["User", Depends(require_admin)]

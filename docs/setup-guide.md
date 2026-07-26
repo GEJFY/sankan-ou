@@ -19,7 +19,16 @@ cd sankan-ou
 
 ## 2. 環境変数設定
 
-`apps/api/.env` ファイルを作成し、以下の内容を設定する。
+リポジトリ直下 (`sankan-ou/.env`) に `.env` ファイルを作成し、以下の内容を設定する。
+
+> **`.env` の配置場所について**: `docker-compose.yml` の `env_file: .env` はコンポーズファイル自身
+> (リポジトリ直下) からの相対パスで解決されるため、Docker Compose で起動する場合は必ず
+> **リポジトリ直下** に `.env` を置く（`apps/api/.env` ではない）。`apps/api/src/config.py` も
+> `_PROJECT_ROOT` (= リポジトリ直下) の `.env` を絶対パスで探しにいく実装になっており、
+> `cd apps/api && uvicorn ...` のように Docker を使わず直接起動する場合も同じリポジトリ直下の
+> `.env` が読み込まれる。`apps/api/.env` はリポジトリ直下に `.env` が存在しない場合にのみ、
+> かつ `apps/api/` をカレントディレクトリにして起動したときのフォールバックとしてしか
+> 参照されないため、通常は作成不要（作成すると2箇所の設定が食い違う原因になるので避けること）。
 
 ```env
 # Database
@@ -184,16 +193,30 @@ npm run build
 
 ## 9. CI/CD
 
-GitHub Actions で以下の3ジョブが自動実行される。
+GitHub Actions で以下のジョブが自動実行される。
 
-| ジョブ | トリガー | 内容 |
-|--------|---------|------|
-| **API Tests** | PR / push to main | pytest 実行 |
-| **Web Build** | PR / push to main | Next.js ビルド確認 |
-| **Docker Build** | PR / push to main | Docker イメージビルド確認 |
+**CI** (`.github/workflows/ci.yml`, PR作成時 / push to main で実行):
 
-- **CI**: PR 作成時に自動実行
-- **CD**: main マージ後に ACR ビルド → Azure Container Apps デプロイ
+| ジョブ | 内容 |
+|--------|------|
+| **API Tests** | ruff（リンター）・mypy（型チェック）・pip-audit（脆弱性スキャン、非ブロッキング）・pytest 実行 |
+| **Web Build** | npm run lint（非ブロッキング）・npm audit（脆弱性スキャン、非ブロッキング）・Next.js ビルド確認 |
+| **Docker Build** | Docker イメージビルド確認 |
+
+**CD** (`.github/workflows/cd.yml`):
+
+- CI ワークフローが `main` へのプッシュで完了 (`workflow_run` イベント) し、かつ **成功した場合のみ**発火する
+  （CI が失敗した場合はデプロイされない）。
+- 変更されたパスに応じて以下のジョブが実行される:
+  - **deploy-api**: `apps/api/**` または `docker/api/**` に変更がある場合、ACR でイメージビルド →
+    `sankanou-api` Container App にデプロイ
+  - **deploy-web**: `apps/web/**` または `docker/web/**` に変更がある場合、ACR でイメージビルド →
+    `sankanou-web` Container App にデプロイ
+
+> 注: `ruff check` / `mypy` / `npm run lint` は現状リポジトリに残る既存の指摘事項が多いため、
+> 一時的に非ブロッキング（`continue-on-error: true`）に設定されている。特に `apps/web` は
+> ESLint 自体が未導入（`eslint` / `eslint-config-next` が devDependencies に無く、設定ファイルも
+> 無い）ため、`npm run lint` を有効化するにはこれらの追加が別途必要。
 
 ## 10. トラブルシューティング
 
@@ -206,3 +229,5 @@ GitHub Actions で以下の3ジョブが自動実行される。
 | Windows 改行コード問題 | `git config core.autocrlf true` を設定 |
 | import エラー | `pip install -e ".[dev]"` で再インストール、`__init__.py` の存在確認 |
 | Docker ビルド失敗 | `docker compose build --no-cache` でキャッシュクリアビルド |
+| `.env` を編集したのに反映されない | `apps/api/.env` を編集していないか確認する。リポジトリ直下の `.env` を編集すること（[環境変数設定](#2-環境変数設定)参照） |
+| GCP ADC ボリュームのマウントエラー | `docker-compose.yml` の `api` サービスは `${GOOGLE_APPLICATION_CREDENTIALS_DIR:-./docker/gcloud-creds}` をマウントする。既定の `./docker/gcloud-creds` は空ディレクトリとしてリポジトリに同梱済みなので通常はエラーにならない。Vertex AI 経由の Gemini フォールバックを実際に使う場合のみ、環境変数 `GOOGLE_APPLICATION_CREDENTIALS_DIR` に `gcloud auth application-default login` 実行後の ADC ディレクトリ（Windows: `%APPDATA%\gcloud`、macOS/Linux: `$HOME/.config/gcloud`）を設定する |

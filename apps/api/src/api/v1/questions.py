@@ -20,9 +20,17 @@ from src.schemas.question import (
     GenerateQuestionsResponse,
     QuestionOut,
 )
+from src.services.gamification_service import GamificationService
+from src.services.rate_limit import check_user_rate_limit
+from src.services.session_service import mastery_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/questions", tags=["questions"])
+
+# LLMによる問題生成は高コストなため、1ユーザーあたり1分間に最大10回まで
+# (模擬試験は複数トピックから出題するため複数回呼び出される)
+_GENERATE_RATE_LIMIT = 10
+_GENERATE_RATE_WINDOW_SECONDS = 60.0
 
 
 def _extract_json_array(raw: str) -> list:
@@ -107,6 +115,9 @@ async def get_question_bank(
 @router.post("/generate", response_model=GenerateQuestionsResponse)
 async def generate_questions(body: GenerateQuestionsRequest, db: DbSession, current_user: CurrentUser):
     """LLMで練習問題を自動生成（大量生成時はバッチ分割）"""
+    check_user_rate_limit(
+        "questions-generate", current_user.id, _GENERATE_RATE_LIMIT, _GENERATE_RATE_WINDOW_SECONDS
+    )
     topic = await db.get(Topic, body.topic_id)
     if not topic:
         raise HTTPException(status_code=404, detail="トピックが見つかりません")
@@ -215,6 +226,22 @@ async def answer_question(body: AnswerRequest, db: DbSession, current_user: Curr
         response_time_ms=body.response_time_ms,
     )
     db.add(attempt)
+    await db.flush()
+
+    # トピック別習熟度(UserTopicMastery)を更新 (/mastery/{course_id} や合格予測で利用)
+    await mastery_service.update_mastery(
+        db, current_user.id, question.topic_id, is_correct, body.response_time_ms
+    )
+
+    if is_correct:
+        course = await db.get(Course, question.course_id)
+        gam = GamificationService(db)
+        await gam.award_xp(
+            current_user.id,
+            20,
+            "quiz_correct",
+            course_code=course.code if course else None,
+        )
 
     return AnswerResponse(
         is_correct=is_correct,

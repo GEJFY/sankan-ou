@@ -223,10 +223,22 @@ az ad sp create-for-rbac \
 
 ### CD トリガー条件
 
-`apps/api/**` または `docker/api/**` の変更が main にプッシュされたとき:
+CD (`.github/workflows/cd.yml`) は CI (`.github/workflows/ci.yml`) の完了イベント
+(`workflow_run`) をトリガーとし、**CI が `main` へのプッシュに対して成功した場合のみ**発火する
+（`push` イベントを直接トリガーにしていた旧構成だと CI の結果を待たずにデプロイされてしまうため）。
 
-1. ACR でイメージをビルド（git SHA タグ + latest タグ）
-2. Container App に新リビジョンをデプロイ
+CI が成功したコミットと、その1つ前のコミットとの差分を見て、変更されたパスに応じて以下を実行する:
+
+- **deploy-api**: `apps/api/**` または `docker/api/**` に変更がある場合
+  1. ACR で API イメージをビルド（git SHA タグ + latest タグ）
+  2. `sankanou-api` Container App に新リビジョンをデプロイ
+- **deploy-web**: `apps/web/**` または `docker/web/**` に変更がある場合
+  1. 現在の `sankanou-api` の URL を取得し、`NEXT_PUBLIC_API_URL` ビルド引数として渡して
+     ACR で Web イメージをビルド（git SHA タグ + latest タグ）
+  2. `sankanou-web` Container App に新リビジョンをデプロイ
+
+両方に変更があれば両方のジョブが並行して実行される。どちらの変更も無ければ、CI は動くが
+デプロイジョブはスキップされる。
 
 ## 環境変数一覧
 

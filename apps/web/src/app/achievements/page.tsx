@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
+import { COURSE_COLORS } from "@/lib/constants";
 import { Award, CheckCircle2, ClipboardList } from "lucide-react";
 
 interface Mission {
@@ -41,12 +42,6 @@ interface GamificationProfile {
   badge_count: number;
   daily_missions: Mission[];
 }
-
-const COURSE_COLORS: Record<string, string> = {
-  CIA: "#e94560",
-  CISA: "#0891b2",
-  CFE: "#7c3aed",
-};
 
 export default function AchievementsPage() {
   const [profile, setProfile] = useState<GamificationProfile | null>(null);
@@ -280,7 +275,7 @@ export default function AchievementsPage() {
                       {entry.source.replace(/_/g, " ")}
                     </span>
                     {entry.detail && (
-                      <span className="ml-2 text-[11px] text-zinc-600">
+                      <span className="ml-2 text-[11px] text-zinc-500">
                         {entry.detail}
                       </span>
                     )}

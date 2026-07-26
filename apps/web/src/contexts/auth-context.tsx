@@ -8,10 +8,8 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import { API_BASE_URL } from "@/lib/constants";
+import { API_BASE_URL, TOKEN_STORAGE_KEY } from "@/lib/constants";
 import type { User, TokenResponse } from "@/types";
-
-const TOKEN_KEY = "sankanou_token";
 
 interface AuthContextType {
   user: User | null;
@@ -44,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 初期化: localStorageからトークン復元
   useEffect(() => {
-    const saved = localStorage.getItem(TOKEN_KEY);
+    const saved = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!saved) {
       setLoading(false);
       return;
@@ -54,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(saved);
         setUser(u);
       } else {
-        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
       setLoading(false);
     });
@@ -71,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(err.detail || "ログインに失敗しました");
     }
     const data = (await res.json()) as TokenResponse;
-    localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
     setToken(data.access_token);
 
     const u = await fetchMe(data.access_token);
@@ -93,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [login]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
     setUser(null);
   }, []);

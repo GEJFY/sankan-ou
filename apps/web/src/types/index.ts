@@ -63,3 +63,20 @@ export interface HealthResponse {
   service: string;
   version: string;
 }
+
+/** Multiple-choice answer choice for quiz/mock-exam questions */
+export interface QuestionChoice {
+  text: string;
+  is_correct: boolean;
+  explanation: string;
+}
+
+/** Multiple-choice question shared by quiz and mock-exam pages */
+export interface QuizQuestion {
+  id: string;
+  stem: string;
+  choices: QuestionChoice[];
+  explanation: string;
+  difficulty: number;
+  course_code: string;
+}

@@ -26,7 +26,7 @@ FROM python:3.11-slim AS runtime
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 && \
+    libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
@@ -40,11 +40,15 @@ COPY apps/api/alembic.ini ./alembic.ini
 COPY apps/api/seed/ ./seed/
 
 COPY docker/api/start.sh ./start.sh
+COPY docker/api/migrate.py ./migrate.py
 RUN chmod +x ./start.sh
 
 RUN chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
 CMD ["./start.sh"]

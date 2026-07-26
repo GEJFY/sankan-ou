@@ -73,6 +73,9 @@ export default function MockExamPage() {
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+  // 残り時間はタブのバックグラウンド化等によるsetIntervalのドリフトを避けるため、
+  // 開始時に確定させた絶対終了時刻から都度計算する
+  const endTimeRef = useRef<number>(0);
 
   useEffect(() => {
     apiFetch<{ courses: CourseInfo[] }>("/courses")
@@ -107,14 +110,12 @@ export default function MockExamPage() {
   useEffect(() => {
     if (phase === "running" && timeLeft > 0) {
       timerRef.current = setInterval(() => {
-        setTimeLeft((t) => {
-          if (t <= 1) {
-            clearInterval(timerRef.current!);
-            submitExam();
-            return 0;
-          }
-          return t - 1;
-        });
+        const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(timerRef.current!);
+          submitExam();
+        }
       }, 1000);
       return () => clearInterval(timerRef.current!);
     }
@@ -123,7 +124,7 @@ export default function MockExamPage() {
 
   const startExam = async () => {
     if (topics.length === 0) {
-      setError("トピックが見つかりません。コースのシードデータを確認してください。");
+      setError("このコースにはまだ学習コンテンツが登録されていません。しばらくしてから再度お試しください。");
       return;
     }
     setIsGenerating(true);
@@ -132,24 +133,85 @@ export default function MockExamPage() {
     const effectiveCount = questionCount;
 
     try {
-      const topic = topics[Math.floor(Math.random() * topics.length)];
-      const data = await apiFetch<{ questions: Question[] }>(
-        "/questions/generate",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            topic_id: topic.id,
-            count: effectiveCount,
-            difficulty: 3,
-          }),
-        }
-      );
-      setQuestions(data.questions);
-      setAnswers(new Array(data.questions.length).fill(null));
+      const sectionNumber =
+        selectedSection !== null
+          ? config?.sections[selectedSection]?.part ??
+            config?.sections[selectedSection]?.domain ??
+            config?.sections[selectedSection]?.section ??
+            null
+          : null;
 
-      const durationMin = Math.max(effectiveCount * 2, 10);
-      setTimeLeft(durationMin * 60);
+      // バックエンドに出題対象トピック(本番のセクション構成に対応)を問い合わせる
+      const startData = await apiFetch<{
+        exam_info: { duration_minutes: number };
+        topic_ids: string[];
+      }>("/mock-exam/start", {
+        method: "POST",
+        body: JSON.stringify({
+          course_code: selectedCourse,
+          section: sectionNumber,
+          question_count: effectiveCount,
+        }),
+      });
+
+      // 本番同様、単一トピックに偏らせず複数トピックから配分して出題する。
+      // 1回あたりの生成上限(30問)とレート制限を踏まえ、呼び出し回数は最大8回に抑える。
+      const candidateTopicIds =
+        startData.topic_ids.length > 0 ? startData.topic_ids : topics.map((t) => t.id);
+      const shuffledTopicIds = [...candidateTopicIds].sort(() => Math.random() - 0.5);
+      const maxCalls = Math.min(8, Math.max(1, Math.ceil(effectiveCount / 10)));
+      const callTopicIds = Array.from(
+        { length: maxCalls },
+        (_, i) => shuffledTopicIds[i % shuffledTopicIds.length]
+      );
+
+      let remaining = effectiveCount;
+      const allQuestions: Question[] = [];
+      for (let i = 0; i < callTopicIds.length && remaining > 0; i++) {
+        const isLast = i === callTopicIds.length - 1;
+        const count = Math.min(
+          30,
+          isLast ? remaining : Math.ceil(effectiveCount / callTopicIds.length)
+        );
+        try {
+          const data = await apiFetch<{ questions: Question[] }>("/questions/generate", {
+            method: "POST",
+            body: JSON.stringify({
+              topic_id: callTopicIds[i],
+              count,
+              difficulty: 3,
+            }),
+          });
+          allQuestions.push(...data.questions);
+          remaining -= data.questions.length;
+        } catch {
+          // 1トピック分の生成に失敗しても他のトピックの問題で続行する
+        }
+      }
+
+      if (allQuestions.length === 0) {
+        throw new Error("問題を生成できませんでした。しばらくしてから再度お試しください。");
+      }
+
+      // 同一トピックの問題が連続しないよう出題順もシャッフルする
+      const shuffledQuestions = [...allQuestions].sort(() => Math.random() - 0.5);
+      setQuestions(shuffledQuestions);
+      setAnswers(new Array(shuffledQuestions.length).fill(null));
+
+      // 本番の制限時間を、本番の総問題数に対する練習問題数の比率で按分する
+      const totalQuestionsInRealExam = config?.total_questions || shuffledQuestions.length;
+      const realDurationMin = startData.exam_info?.duration_minutes ?? 0;
+      const durationMin =
+        realDurationMin > 0
+          ? Math.max(
+              5,
+              Math.round((realDurationMin * shuffledQuestions.length) / totalQuestionsInRealExam)
+            )
+          : Math.max(shuffledQuestions.length * 1.5, 10);
+      const durationSeconds = durationMin * 60;
       startTimeRef.current = Date.now();
+      endTimeRef.current = startTimeRef.current + durationSeconds * 1000;
+      setTimeLeft(durationSeconds);
       setIsSaved(false);
       setPhase("running");
     } catch (e) {

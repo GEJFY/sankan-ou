@@ -4,6 +4,8 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import make_admin
+
 
 async def _register_and_login(client: AsyncClient) -> str:
     """Register unique user and return token"""
@@ -50,13 +52,30 @@ async def test_get_xp_history(client: AsyncClient):
 
 @pytest.mark.integration
 async def test_award_xp(client: AsyncClient):
-    """XP付与"""
-    token = await _register_and_login(client)
+    """XP付与 (管理者のみ)"""
+    admin_token, _ = await make_admin(client)
+    me_resp = await client.get("/api/v1/auth/me", headers=_auth_headers(admin_token))
+    admin_id = me_resp.json()["id"]
+
     resp = await client.post(
-        "/api/v1/gamification/xp/award?amount=100&source=test",
-        headers=_auth_headers(token),
+        f"/api/v1/gamification/xp/award?target_user_id={admin_id}&amount=100&source=test",
+        headers=_auth_headers(admin_token),
     )
     assert resp.status_code == 200
+
+
+@pytest.mark.integration
+async def test_award_xp_requires_admin(client: AsyncClient):
+    """XP付与は管理者以外は403"""
+    token = await _register_and_login(client)
+    me_resp = await client.get("/api/v1/auth/me", headers=_auth_headers(token))
+    user_id = me_resp.json()["id"]
+
+    resp = await client.post(
+        f"/api/v1/gamification/xp/award?target_user_id={user_id}&amount=100&source=test",
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 403
 
 @pytest.mark.integration
 async def test_get_badges(client: AsyncClient):
@@ -67,10 +86,22 @@ async def test_get_badges(client: AsyncClient):
 
 @pytest.mark.integration
 async def test_get_leaderboard(client: AsyncClient):
-    """リーダーボード"""
-    resp = await client.get("/api/v1/gamification/leaderboard")
+    """リーダーボード（認証必須。表示名のみ含み、生のuser_idは含まない）"""
+    token = await _register_and_login(client)
+    resp = await client.get("/api/v1/gamification/leaderboard", headers=_auth_headers(token))
     assert resp.status_code == 200
-    assert "leaderboard" in resp.json()
+    data = resp.json()
+    assert "leaderboard" in data
+    if data["leaderboard"]:
+        assert "display_name" in data["leaderboard"][0]
+        assert "user_id" not in data["leaderboard"][0]
+
+
+@pytest.mark.integration
+async def test_get_leaderboard_unauthenticated(client: AsyncClient):
+    """未認証のリーダーボード取得 → 401"""
+    resp = await client.get("/api/v1/gamification/leaderboard")
+    assert resp.status_code == 401
 
 @pytest.mark.integration
 async def test_gamification_unauthenticated(client: AsyncClient):
@@ -80,10 +111,13 @@ async def test_gamification_unauthenticated(client: AsyncClient):
 
 @pytest.mark.integration
 async def test_award_xp_level_up(client: AsyncClient):
-    """大量XP付与でレベルアップ"""
-    token = await _register_and_login(client)
+    """大量XP付与でレベルアップ (管理者)"""
+    admin_token, _ = await make_admin(client)
+    me_resp = await client.get("/api/v1/auth/me", headers=_auth_headers(admin_token))
+    admin_id = me_resp.json()["id"]
+
     resp = await client.post(
-        "/api/v1/gamification/xp/award?amount=500&source=test",
-        headers=_auth_headers(token),
+        f"/api/v1/gamification/xp/award?target_user_id={admin_id}&amount=500&source=test",
+        headers=_auth_headers(admin_token),
     )
     assert resp.status_code == 200

@@ -4,7 +4,7 @@
   "color": "#0891b2",
   "exam_config": {
     "total_parts": 1,
-    "passing_score": "450/800",
+    "passing_score": "450/800（200-800スケール、正答率目安60%程度）",
     "questions": 150,
     "duration_minutes": 240,
     "format": "multiple_choice"
@@ -16,11 +16,36 @@
       "weight_pct": 100,
       "exam_spec": "150問 / 240分",
       "children": [
-        {"name": "D1. 情報システム監査プロセス", "level": 1, "weight_pct": 21},
-        {"name": "D2. ITのガバナンスとマネジメント", "level": 1, "weight_pct": 17},
-        {"name": "D3. IS取得・開発・実装", "level": 1, "weight_pct": 12},
-        {"name": "D4. IS運用とビジネスレジリエンス", "level": 1, "weight_pct": 23},
-        {"name": "D5. 情報資産の保護", "level": 1, "weight_pct": 27}
+        {
+          "name": "D1. 情報システム監査プロセス",
+          "level": 1,
+          "weight_pct": 21,
+          "keywords": ["リスクベース監査計画", "証拠の十分性と適切性", "監査人の独立性と客観性", "監査報告とフォローアップ"]
+        },
+        {
+          "name": "D2. ITのガバナンスとマネジメント",
+          "level": 1,
+          "weight_pct": 17,
+          "keywords": ["COBIT 2019", "ITバランスト・スコアカード", "IT戦略委員会", "IT運営委員会", "IT組織と人材管理"]
+        },
+        {
+          "name": "D3. IS取得・開発・実装",
+          "level": 1,
+          "weight_pct": 12,
+          "keywords": ["SDLC", "ポスト・インプリメンテーション・レビュー", "変更管理", "アジャイル開発監査"]
+        },
+        {
+          "name": "D4. IS運用とビジネスレジリエンス",
+          "level": 1,
+          "weight_pct": 23,
+          "keywords": ["RTO/RPO/MTD", "キャパシティ管理", "インシデント管理と問題管理", "ITILv4"]
+        },
+        {
+          "name": "D5. 情報資産の保護",
+          "level": 1,
+          "weight_pct": 27,
+          "keywords": ["多層防御", "データ分類とアクセス制御", "ペネトレーションテスト", "ゼロトラストアーキテクチャ"]
+        }
       ]
     }
   ]

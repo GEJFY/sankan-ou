@@ -1,0 +1,14 @@
+This directory is the default bind-mount source for the api service's GCP
+Application Default Credentials volume in docker-compose.yml (see the
+GOOGLE_APPLICATION_CREDENTIALS_DIR comment there).
+
+It is intentionally empty and committed only so `docker compose up` has a
+valid directory to mount by default, even when Vertex AI / Gemini fallback
+is not configured. To actually use the Gemini fallback locally, either:
+
+  - place your own application_default_credentials.json (from
+    `gcloud auth application-default login`) in this directory, or
+  - set GOOGLE_APPLICATION_CREDENTIALS_DIR to point at your real gcloud ADC
+    directory instead (see docker-compose.yml).
+
+Do not commit real credentials into this directory.

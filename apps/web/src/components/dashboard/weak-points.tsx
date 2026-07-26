@@ -32,7 +32,7 @@ export default function WeakPoints({ topics }: WeakPointsProps) {
         <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
           弱点トピック TOP5
         </h3>
-        <span className="tooltip-trigger">
+        <span className="tooltip-trigger" tabIndex={0}>
           <span className="text-zinc-700 cursor-help text-[10px]">[?]</span>
           <span className="tooltip-content">正答率が低いトピックを優先表示。集中的に復習することで効率的にスコアアップできます。</span>
         </span>
@@ -51,7 +51,7 @@ export default function WeakPoints({ topics }: WeakPointsProps) {
                   {topic.topic_name}
                 </span>
               </div>
-              <span className="text-zinc-600 text-xs tabular-nums">
+              <span className="text-zinc-500 text-xs tabular-nums">
                 {Math.round(topic.mastery_score * 100)}%
               </span>
             </div>

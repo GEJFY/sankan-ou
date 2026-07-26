@@ -3,23 +3,103 @@
   "name": "Certified Fraud Examiner（公認不正検査士）",
   "color": "#7c3aed",
   "exam_config": {
-    "total_parts": 4,
-    "passing_score": "各75%",
-    "questions_per_section": 100,
-    "duration_per_section_minutes": 120,
-    "format": "multiple_choice"
+    "total_parts": 3,
+    "passing_score": "各セクション75%以上",
+    "questions_total": 310,
+    "duration_total_minutes": 390,
+    "format": "multiple_choice_and_true_false",
+    "effective": "2026年6月2日改訂（2024年JTA準拠、旧4セクション制から3セクション制へ移行）",
+    "delivery": "セクションごとに個別予約（Prometric ProProctorによるオンライン受験可）。有効化から60日以内に受験。"
   },
   "topics": [
     {
-      "name": "CFE 4セクション独立試験",
+      "name": "Section 1: Fraud Schemes and Financial Crimes（不正スキームと金融犯罪）",
       "level": 0,
-      "weight_pct": 100,
-      "exam_spec": "各100問×4 / 各120分",
+      "weight_pct": 38.7,
+      "exam_spec": "120問 / 150分",
       "children": [
-        {"name": "S1. 財務取引と不正スキーム", "level": 1, "weight_pct": 25},
-        {"name": "S2. 法律（Law）", "level": 1, "weight_pct": 25},
-        {"name": "S3. 調査（Investigation）", "level": 1, "weight_pct": 25},
-        {"name": "S4. 不正防止と抑止", "level": 1, "weight_pct": 25}
+        {
+          "name": "A. 資産の不正流用（Asset Misappropriation）",
+          "level": 1,
+          "weight_pct": 30,
+          "keywords": ["現金窃盗", "スキミング", "請求書不正", "給与不正", "経費精算不正", "在庫の不正流用"]
+        },
+        {
+          "name": "B. 汚職（Corruption Schemes）",
+          "level": 1,
+          "weight_pct": 25,
+          "keywords": ["贈収賄", "利益相反", "違法な謝礼", "経済的恐喝", "入札談合"]
+        },
+        {
+          "name": "C. 財務諸表不正（Financial Statement Fraud）",
+          "level": 1,
+          "weight_pct": 25,
+          "keywords": ["収益の架空計上", "費用の過少計上", "資産の過大評価", "簿外債務", "不適切な開示"]
+        },
+        {
+          "name": "D. マネーロンダリングと金融犯罪（Money Laundering & Financial Crimes）",
+          "level": 1,
+          "weight_pct": 20,
+          "keywords": ["プレースメント・レイヤリング・インテグレーション", "AML規制", "サイバー詐欺", "テクノロジーを悪用した金融犯罪"]
+        }
+      ]
+    },
+    {
+      "name": "Section 2: Fraud Investigations and Legal Issues（不正調査と法的論点）",
+      "level": 0,
+      "weight_pct": 38.7,
+      "exam_spec": "120問 / 150分",
+      "children": [
+        {
+          "name": "A. 不正調査の技法（Investigation Techniques）",
+          "level": 1,
+          "weight_pct": 30,
+          "keywords": ["調査計画", "証拠収集", "ベンフォードの法則", "追跡調査（Tracing）", "調査報告書の作成"]
+        },
+        {
+          "name": "B. インタビュー技法（Interviewing Techniques）",
+          "level": 1,
+          "weight_pct": 20,
+          "keywords": ["認知インタビュー", "自白誘導インタビュー", "非言語的手がかり", "インタビューの順序"]
+        },
+        {
+          "name": "C. デジタルフォレンジックとデータ分析（Digital Forensics & Data Analysis）",
+          "level": 1,
+          "weight_pct": 20,
+          "keywords": ["証拠保全の連鎖", "電子証拠の収集", "メタデータ分析", "データマイニング"]
+        },
+        {
+          "name": "D. 法的枠組みと訴訟手続（Legal Framework & Litigation）",
+          "level": 1,
+          "weight_pct": 30,
+          "keywords": ["刑事訴訟と民事訴訟の違い", "証拠法則", "証人尋問", "SOX法", "FCPA", "専門家証人"]
+        }
+      ]
+    },
+    {
+      "name": "Section 3: Fraud Prevention and Deterrence（不正の防止と抑止）",
+      "level": 0,
+      "weight_pct": 22.6,
+      "exam_spec": "70問 / 90分",
+      "children": [
+        {
+          "name": "A. 不正リスク管理（Fraud Risk Management）",
+          "level": 1,
+          "weight_pct": 35,
+          "keywords": ["不正トライアングル", "不正ダイアモンド", "不正リスクアセスメント", "業界別不正リスク"]
+        },
+        {
+          "name": "B. 内部統制と不正防止（Internal Controls & Prevention）",
+          "level": 1,
+          "weight_pct": 35,
+          "keywords": ["COSO内部統制", "職務分掌", "モニタリング活動", "内部通報制度"]
+        },
+        {
+          "name": "C. 倫理・コンプライアンスプログラム（Ethics & Compliance Programs）",
+          "level": 1,
+          "weight_pct": 30,
+          "keywords": ["行動規範", "倫理研修", "コンプライアンス体制", "経営層のコミットメント（Tone at the Top）"]
+        }
       ]
     }
   ]

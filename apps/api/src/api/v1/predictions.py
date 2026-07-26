@@ -1,6 +1,8 @@
 """Predictions endpoints — 合格予測・学習ROI分析"""
 
-from fastapi import APIRouter, HTTPException
+import uuid
+
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
 from src.deps import CurrentUser, DbSession
@@ -10,6 +12,11 @@ from src.schemas.prediction import (
     PredictionResponse,
     ROIResponse,
     WeakTopicPrediction,
+)
+from src.services.background_profile import (
+    build_fast_track_note,
+    classify_topics,
+    resolve_backgrounds,
 )
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -51,7 +58,13 @@ def _recommendation(pass_prob: float, weak_count: int, remaining: int) -> str:
 
 @router.get("/{course_id}", response_model=PredictionResponse)
 async def get_prediction(
-    course_id: str, db: DbSession, current_user: CurrentUser
+    course_id: uuid.UUID,
+    db: DbSession,
+    current_user: CurrentUser,
+    background: str | None = Query(
+        default=None,
+        description="学習者の職業バックグラウンド (accountant,it_engineer をカンマ区切り)",
+    ),
 ) -> PredictionResponse:
     """コース別合格予測"""
     course = await db.get(Course, course_id)
@@ -140,6 +153,15 @@ async def get_prediction(
     passing_pct = _passing_score_pct(course.exam_config)
     predicted_score = int(pass_prob * 100)
 
+    backgrounds = resolve_backgrounds(background)
+    background_note = None
+    if backgrounds:
+        topic_names = [row.name for row in topic_stats]
+        strong, focus = classify_topics(course.code, topic_names, backgrounds)
+        background_note = build_fast_track_note(
+            course.code, backgrounds, strong, focus, total_topics
+        )
+
     return PredictionResponse(
         predicted_score=predicted_score,
         pass_probability=round(pass_prob * 100, 1),
@@ -148,12 +170,13 @@ async def get_prediction(
         total_topics=total_topics,
         studied_topics=studied_topics,
         recommendation=_recommendation(pass_prob, len(weak_only), total_cards - mastered),
+        background_note=background_note,
     )
 
 
 @router.get("/{course_id}/roi", response_model=ROIResponse)
 async def get_roi(
-    course_id: str, db: DbSession, current_user: CurrentUser
+    course_id: uuid.UUID, db: DbSession, current_user: CurrentUser
 ) -> ROIResponse:
     """学習ROI分析"""
     course = await db.get(Course, course_id)

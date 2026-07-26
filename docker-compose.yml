@@ -26,12 +26,22 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://sankanou:sankanou_dev@db:5432/sankanou
       PYTHONPATH: /app
-      # GCP Vertex AI ADC認証
+      # GCP Vertex AI ADC認証 (Gemini フォールバック利用時のみ必要)
       GOOGLE_APPLICATION_CREDENTIALS: /gcp/application_default_credentials.json
     volumes:
       - ./apps/api:/app
-      # GCP ADC認証ファイルをマウント (Vertex AI用)
-      - ${APPDATA}/gcloud/application_default_credentials.json:/gcp/application_default_credentials.json:ro
+      # GCP ADC 認証ディレクトリをマウント (Vertex AI 経由の Gemini フォールバック利用時のみ必要)。
+      # ${APPDATA} は Windows 専用の環境変数で、macOS/Linux では空文字になり
+      # `docker compose up` のバインドマウントが失敗する原因になっていたため、
+      # クロスプラットフォームな GOOGLE_APPLICATION_CREDENTIALS_DIR に変更。
+      # 既定値は ./docker/gcloud-creds (空ディレクトリをリポジトリに同梱) なので、
+      # 未設定・Gemini 未使用でも docker compose up は失敗しない。
+      # 実際に Vertex AI 経由の Gemini フォールバックを使う場合は、
+      # `gcloud auth application-default login` 実行後に生成される
+      # application_default_credentials.json を含むディレクトリを指定する:
+      #   Windows:      set GOOGLE_APPLICATION_CREDENTIALS_DIR=%APPDATA%\gcloud
+      #   macOS/Linux:  export GOOGLE_APPLICATION_CREDENTIALS_DIR=$HOME/.config/gcloud
+      - ${GOOGLE_APPLICATION_CREDENTIALS_DIR:-./docker/gcloud-creds}:/gcp:ro
     depends_on:
       db:
         condition: service_healthy

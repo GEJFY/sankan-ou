@@ -4,15 +4,26 @@ import json
 import logging
 import re
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from src.llm.client import generate, MODEL_SONNET
-from src.llm.gemini_client import generate_slide_image, generate_text as gemini_generate_text, is_gemini_available
+from src.deps import CurrentUser
+from src.llm.client import MODEL_SONNET, generate
+from src.llm.gemini_client import generate_slide_image, is_gemini_available
+from src.llm.gemini_client import generate_text as gemini_generate_text
+from src.services.rate_limit import check_user_rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/media", tags=["media"])
+
+# メディア生成は画像生成を伴い高コストなため、通常のAIチューターより厳しく制限する
+_MEDIA_RATE_LIMIT = 5
+_MEDIA_RATE_WINDOW_SECONDS = 60.0
+
+
+def _throttle(current_user: CurrentUser) -> None:
+    check_user_rate_limit("media-generate", current_user.id, _MEDIA_RATE_LIMIT, _MEDIA_RATE_WINDOW_SECONDS)
 
 
 class GenerateSlideRequest(BaseModel):
@@ -71,8 +82,8 @@ def _extract_json(raw: str, expect_array: bool = True):
     return json.loads(text)
 
 
-@router.post("/slides/generate")
-async def generate_slides(body: GenerateSlideRequest):
+@router.post("/slides/generate", dependencies=[Depends(_throttle)])
+async def generate_slides(body: GenerateSlideRequest, current_user: CurrentUser):
     """AIスライド自動生成"""
     system = f"""あなたは{body.course_code}資格の教育コンテンツ制作の専門家です。
 指定されたトピックについて、正確に{body.slide_count}枚のプレゼンテーションスライドを日本語で作成してください。
@@ -171,8 +182,8 @@ async def generate_slides(body: GenerateSlideRequest):
     }
 
 
-@router.post("/audio/script")
-async def generate_audio_script(body: GenerateAudioScriptRequest):
+@router.post("/audio/script", dependencies=[Depends(_throttle)])
+async def generate_audio_script(body: GenerateAudioScriptRequest, current_user: CurrentUser):
     """音声解説スクリプト生成"""
     from src.llm.prompts.tutor import LEVEL_DESCRIPTIONS
 
