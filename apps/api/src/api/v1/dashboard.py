@@ -168,6 +168,7 @@ async def get_history(db: DbSession, current_user: CurrentUser) -> HistoryRespon
             func.sum(
                 case((ReviewLog.rating >= 3, 1), else_=0)
             ).label("correct_count"),
+            func.coalesce(func.sum(ReviewLog.response_time_ms), 0).label("total_response_ms"),
         )
         .join(CardReview, ReviewLog.card_review_id == CardReview.id)
         .where(CardReview.user_id == current_user.id)
@@ -178,14 +179,22 @@ async def get_history(db: DbSession, current_user: CurrentUser) -> HistoryRespon
     result = await db.execute(stmt)
     rows = result.all()
 
-    history = [
-        DailyHistory(
-            date=str(row.review_date),
-            cards_reviewed=row.cards_reviewed,
-            correct=row.correct_count or 0,
-            minutes=row.cards_reviewed,
+    history = []
+    for row in rows:
+        # response_time_msが記録されていればそれを分に換算、
+        # クライアントが未計測(0)の場合は1カード30秒として概算
+        if row.total_response_ms and row.total_response_ms > 0:
+            minutes = round(row.total_response_ms / 60000, 1)
+        else:
+            minutes = round(row.cards_reviewed * 0.5, 1)
+
+        history.append(
+            DailyHistory(
+                date=str(row.review_date),
+                cards_reviewed=row.cards_reviewed,
+                correct=row.correct_count or 0,
+                minutes=minutes,
+            )
         )
-        for row in rows
-    ]
 
     return HistoryResponse(history=list(reversed(history)))

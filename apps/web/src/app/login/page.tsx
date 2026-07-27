@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -57,10 +58,12 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label className="block text-xs text-zinc-500 font-medium mb-1.5">メールアドレス</label>
+            <label htmlFor="login-email" className="block text-xs text-zinc-500 font-medium mb-1.5">メールアドレス</label>
             <input
+              id="login-email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
@@ -69,17 +72,35 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード</label>
+            <label htmlFor="login-password" className="block text-xs text-zinc-500 font-medium mb-1.5">パスワード</label>
             <input
+              id="login-password"
               type="password"
               required
               minLength={8}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/60 transition-colors"
               placeholder="8文字以上"
             />
           </div>
+
+          <div className="text-right -mt-2">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword((v) => !v)}
+              className="text-xs text-zinc-500 hover:text-blue-400 hover:underline transition-colors"
+            >
+              パスワードをお忘れですか？
+            </button>
+          </div>
+
+          {showForgotPassword && (
+            <div className="rounded-xl bg-zinc-800/60 border border-zinc-700/60 px-4 py-3 text-xs text-zinc-400 leading-relaxed">
+              現在、パスワードの自動再発行には対応していません。お手数ですが、管理者・サポート窓口までご連絡いただき、手動でのパスワードリセットをご依頼ください。
+            </div>
+          )}
 
           <button
             type="submit"

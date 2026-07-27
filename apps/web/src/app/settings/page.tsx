@@ -29,7 +29,9 @@ export default function SettingsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<
+    { type: "success" | "error"; text: string } | null
+  >(null);
 
   const [error, setError] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -63,12 +65,15 @@ export default function SettingsPage() {
         method: "POST",
         body: JSON.stringify({ course_id: courseId }),
       });
-      setMessage("コースに登録しました");
+      setActionMessage({ type: "success", text: "コースに登録しました" });
       await loadData();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "登録に失敗しました");
+      setActionMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "登録に失敗しました",
+      });
     }
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setActionMessage(null), 3000);
   };
 
   const handleUpdateRetention = async (
@@ -80,12 +85,15 @@ export default function SettingsPage() {
         method: "PUT",
         body: JSON.stringify({ desired_retention: retention }),
       });
-      setMessage("目標記憶率を更新しました");
+      setActionMessage({ type: "success", text: "目標記憶率を更新しました" });
       await loadData();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "更新に失敗しました");
+      setActionMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "更新に失敗しました",
+      });
     }
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setActionMessage(null), 3000);
   };
 
   const handleUnenroll = async (enrollmentId: string) => {
@@ -93,12 +101,15 @@ export default function SettingsPage() {
       await apiFetch(`/enrollments/${enrollmentId}`, {
         method: "DELETE",
       });
-      setMessage("登録を解除しました");
+      setActionMessage({ type: "success", text: "登録を解除しました" });
       await loadData();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "解除に失敗しました");
+      setActionMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "解除に失敗しました",
+      });
     }
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setActionMessage(null), 3000);
   };
 
   const handleChangePassword = async () => {
@@ -166,9 +177,15 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {message && (
-          <div className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-3 text-blue-400 text-sm">
-            {message}
+        {actionMessage && actionMessage.type === "success" && (
+          <div className="bg-emerald-950/30 border border-emerald-800/40 rounded-xl p-3 text-emerald-400 text-sm">
+            {actionMessage.text}
+          </div>
+        )}
+
+        {actionMessage && actionMessage.type === "error" && (
+          <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-3 text-red-400 text-sm">
+            {actionMessage.text}
           </div>
         )}
 
@@ -205,11 +222,15 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="text-right tooltip-trigger">
-                      <label className="text-[11px] text-zinc-600 block">
+                    <div className="text-right tooltip-trigger" tabIndex={0}>
+                      <label
+                        htmlFor={`retention-${enrollment.id}`}
+                        className="text-[11px] text-zinc-600 block"
+                      >
                         目標記憶率
                       </label>
                       <select
+                        id={`retention-${enrollment.id}`}
                         value={enrollment.desired_retention}
                         onChange={(e) =>
                           handleUpdateRetention(
@@ -293,27 +314,48 @@ export default function SettingsPage() {
             </div>
           )}
           <div className="space-y-3 max-w-sm">
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="現在のパスワード"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
-            />
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="新しいパスワード（8文字以上）"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
-            />
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="新しいパスワード（確認）"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
-            />
+            <div>
+              <label htmlFor="settings-current-password" className="sr-only">
+                現在のパスワード
+              </label>
+              <input
+                id="settings-current-password"
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="現在のパスワード"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
+              />
+            </div>
+            <div>
+              <label htmlFor="settings-new-password" className="sr-only">
+                新しいパスワード（8文字以上）
+              </label>
+              <input
+                id="settings-new-password"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="新しいパスワード（8文字以上）"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
+              />
+            </div>
+            <div>
+              <label htmlFor="settings-confirm-password" className="sr-only">
+                新しいパスワード（確認）
+              </label>
+              <input
+                id="settings-confirm-password"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="新しいパスワード（確認）"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/60 transition-colors placeholder:text-zinc-600"
+              />
+            </div>
             <button
               onClick={handleChangePassword}
               disabled={!currentPassword || !newPassword || !confirmPassword}

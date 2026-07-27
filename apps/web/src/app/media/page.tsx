@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
+import { COURSE_COLORS } from "@/lib/constants";
+import { dedupeByName } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Download, Sparkles } from "lucide-react";
 
 interface Slide {
@@ -29,11 +31,10 @@ interface Topic {
 
 type MediaMode = "slides" | "audio";
 
-const COURSES = [
-  { code: "CIA", color: "#e94560" },
-  { code: "CISA", color: "#0891b2" },
-  { code: "CFE", color: "#7c3aed" },
-];
+const COURSES = (["CIA", "CISA", "CFE"] as const).map((code) => ({
+  code,
+  color: COURSE_COLORS[code],
+}));
 
 const SLIDE_COUNT_OPTIONS = [5, 8, 10, 15] as const;
 
@@ -66,9 +67,7 @@ export default function MediaPage() {
       .then((data) => {
         if (data) {
           // カテゴリ名で重複を除去
-          const unique = Array.from(
-            new Map(data.topics.map((t) => [t.name, t])).values()
-          );
+          const unique = dedupeByName(data.topics);
           setTopics(unique);
           if (unique.length > 0) setSelectedTopic(unique[0].name);
         }

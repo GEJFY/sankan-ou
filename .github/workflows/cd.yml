@@ -1,26 +1,71 @@
 name: CD
 
+# CI (.github/workflows/ci.yml) が完了してから発火する。push イベントに直接
+# フックすると CI の結果を待たずにデプロイが走ってしまうため、CI ワークフロー
+# 自体の完了 (workflow_run) をトリガーにし、conclusion == 'success' のときだけ
+# 後続ジョブを実行するゲートを job レベルの if で掛けている。
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'docker/api/**'
-      - '.github/workflows/cd.yml'
 
 env:
   RESOURCE_GROUP: rg-sankanou
   ACR_NAME: sankanouacr
   API_APP_NAME: sankanou-api
+  WEB_APP_NAME: sankanou-web
 
 jobs:
+  # workflow_run には push イベントのような paths フィルタが使えないため、
+  # CI が完了した commit を checkout してから、直前の commit との差分で
+  # apps/api・apps/web のどちらに変更があったかを判定する。
+  # 注: ここでは直近1コミット (HEAD^..HEAD) との差分のみを見ている。
+  # このリポジトリの main は PR マージ (通常1コミットにまとまる) で更新される
+  # 想定のため、これで十分だが、複数コミットをまとめて push するケースでは
+  # 中間コミットの変更が漏れる可能性がある点に注意。
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Determine changed paths
+        id: filter
+        run: |
+          CHANGED=$(git diff --name-only HEAD^ HEAD || echo "")
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qE '^(apps/api/|docker/api/|\.github/workflows/cd\.yml)'; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED" | grep -qE '^(apps/web/|docker/web/|\.github/workflows/cd\.yml)'; then
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-api:
     name: Build & Deploy API
     runs-on: ubuntu-latest
-    # CI が先に通ってからデプロイ
-    needs: []
+    needs: changes
+    # CI (workflows: CI) が成功した場合のみ、かつ apps/api・docker/api に変更があった場合のみデプロイ
+    if: github.event.workflow_run.conclusion == 'success' && needs.changes.outputs.api == 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -31,7 +76,7 @@ jobs:
         run: |
           az acr build \
             --registry $ACR_NAME \
-            --image api:${{ github.sha }} \
+            --image api:${{ github.event.workflow_run.head_sha }} \
             --image api:latest \
             --file docker/api/Dockerfile.prod \
             .
@@ -41,4 +86,46 @@ jobs:
           az containerapp update \
             --name $API_APP_NAME \
             --resource-group $RESOURCE_GROUP \
-            --image ${ACR_NAME}.azurecr.io/api:${{ github.sha }}
+            --image ${ACR_NAME}.azurecr.io/api:${{ github.event.workflow_run.head_sha }}
+
+  deploy-web:
+    name: Build & Deploy Web
+    runs-on: ubuntu-latest
+    needs: changes
+    # CI (workflows: CI) が成功した場合のみ、かつ apps/web・docker/web に変更があった場合のみデプロイ
+    if: github.event.workflow_run.conclusion == 'success' && needs.changes.outputs.web == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get current API URL
+        id: api_url
+        run: |
+          API_FQDN=$(az containerapp show \
+            --resource-group $RESOURCE_GROUP \
+            --name $API_APP_NAME \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "url=https://$API_FQDN" >> "$GITHUB_OUTPUT"
+
+      - name: Build image in ACR
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image web:${{ github.event.workflow_run.head_sha }} \
+            --image web:latest \
+            --file docker/web/Dockerfile.prod \
+            --build-arg NEXT_PUBLIC_API_URL=${{ steps.api_url.outputs.url }} \
+            .
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name $WEB_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image ${ACR_NAME}.azurecr.io/web:${{ github.event.workflow_run.head_sha }}

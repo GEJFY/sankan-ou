@@ -4,8 +4,8 @@
     GRC Triple Crown - Azure Deployment Script (PowerShell)
 .DESCRIPTION
     Deploys the GRC Triple Crown platform to Azure Container Apps.
-    Skips already-created resources (RG, ACR, PostgreSQL).
-    Requires: az CLI logged in.
+    Skips already-created resources (RG, ACR). Database is Neon (external, see NEON_DATABASE_URL).
+    Requires: az CLI logged in, NEON_DATABASE_URL environment variable set.
 .EXAMPLE
     .\deploy.ps1
 #>
@@ -19,10 +19,6 @@ $LOG = "$env:TEMP\deploy_remaining_log.txt"
 $RESOURCE_GROUP = "rg-sankanou"
 $LOCATION = "japaneast"
 $ACR_NAME = "sankanouacr"
-$DB_SERVER_NAME = "sankanou-db"
-$DB_NAME = "sankanou"
-$DB_ADMIN_USER = "sankanouadmin"
-$DB_ADMIN_PASSWORD = if ($env:DB_ADMIN_PASSWORD) { $env:DB_ADMIN_PASSWORD } else { [System.Web.Security.Membership]::GeneratePassword(20,3) -replace '[{}()|]','x' }
 $CONTAINER_ENV_NAME = "sankanou-env"
 $API_APP_NAME = "sankanou-api"
 $WEB_APP_NAME = "sankanou-web"
@@ -65,39 +61,40 @@ Start-Sleep -Seconds 90
 Log "  Wait complete. Proceeding..."
 
 # ============================================
-# 2. PostgreSQL config (RG, ACR, PG already exist)
+# 2. Database (Neon - free serverless Postgres)
 # ============================================
-Log "Step 2: Configuring PostgreSQL..."
+# Azure Database for PostgreSQL Flexible Serverは常時起動の時間課金(月額約$15-18)が
+# 避けられないため、代わりにNeon(https://neon.tech)の無料枠を使う。標準的なPostgres
+# プロトコルで、pgvector拡張にも対応しており、本アプリのコード変更は不要。
+Log "Step 2: Configuring database (Neon)..."
 
-Log "  Firewall rule..."
-az postgres flexible-server firewall-rule create `
-    --resource-group $RESOURCE_GROUP `
-    --name $DB_SERVER_NAME `
-    --rule-name "AllowAzureServices" `
-    --start-ip-address 0.0.0.0 `
-    --end-ip-address 0.0.0.0 `
-    --output none 2>$null
-Log "  Firewall done."
+if (-not $env:NEON_DATABASE_URL) {
+    Write-Host "ERROR: NEON_DATABASE_URL is not set." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Set up a free Neon Postgres database first:"
+    Write-Host "  1. Sign up at https://neon.tech (free tier)"
+    Write-Host "  2. Create a project (nearest region to Japan: 'ap-southeast-1' / Singapore)"
+    Write-Host "  3. In the Neon SQL Editor, run: CREATE EXTENSION IF NOT EXISTS vector;"
+    Write-Host "  4. Copy the connection string from the Neon dashboard"
+    Write-Host "  5. Re-run:"
+    Write-Host '     $env:NEON_DATABASE_URL = "postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require"'
+    Write-Host "     .\deploy.ps1"
+    exit 1
+}
 
-Log "  pgvector extension..."
-az postgres flexible-server parameter set `
-    --resource-group $RESOURCE_GROUP `
-    --server-name $DB_SERVER_NAME `
-    --name azure.extensions `
-    --value "vector,uuid-ossp" `
-    --output none 2>$null
-Log "  pgvector done."
-
-Log "  Creating database..."
-az postgres flexible-server db create `
-    --resource-group $RESOURCE_GROUP `
-    --server-name $DB_SERVER_NAME `
-    --database-name $DB_NAME `
-    --output none 2>$null
-Log "  Database done."
-
-$DB_HOST = "${DB_SERVER_NAME}.postgres.database.azure.com"
-$DATABASE_URL = "postgresql+asyncpg://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?ssl=require"
+# NeonのURLスキームをasyncpgドライバ指定に変換し、sslmode=require (libpq形式) を
+# このアプリが期待する ssl=require (asyncpg形式) に揃える。channel_binding=require は
+# asyncpgが認識せず接続エラーになるため除去する。
+$DATABASE_URL = $env:NEON_DATABASE_URL `
+    -replace '^postgresql://', 'postgresql+asyncpg://' `
+    -replace '^postgres://', 'postgresql+asyncpg://' `
+    -replace 'sslmode=require', 'ssl=require' `
+    -replace '[&?]channel_binding=require', ''
+if ($DATABASE_URL -notmatch 'ssl=') {
+    $separator = if ($DATABASE_URL -match '\?') { '&' } else { '?' }
+    $DATABASE_URL = "${DATABASE_URL}${separator}ssl=require"
+}
+Log "  Using Neon database (from NEON_DATABASE_URL)"
 
 # ============================================
 # 3. Azure AI Foundry (AIServices) リソース
@@ -304,4 +301,8 @@ Write-Host "     az containerapp exec -g $RESOURCE_GROUP -n $API_APP_NAME --comm
 Write-Host "  2. Test:  curl $API_URL/api/v1/health" -ForegroundColor White
 Write-Host "  3. Open:  $WEB_URL" -ForegroundColor White
 Write-Host ""
+Write-Host "Cost note: Container Apps + Neon(free tier) is near `$0 when idle." -ForegroundColor DarkGray
+Write-Host "The only fixed cost is ACR Basic (~`$5/month)." -ForegroundColor DarkGray
+Write-Host ""
 Write-Host "Tear down: az group delete --name $RESOURCE_GROUP --yes --no-wait" -ForegroundColor DarkGray
+Write-Host "           (delete the Neon project separately from the neon.tech dashboard)" -ForegroundColor DarkGray

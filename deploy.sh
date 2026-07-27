@@ -7,15 +7,11 @@ set -euo pipefail
 RESOURCE_GROUP="rg-sankanou"
 LOCATION="japaneast"
 ACR_NAME="sankanouacr"
-DB_SERVER_NAME="sankanou-db"
-DB_NAME="sankanou"
-DB_ADMIN_USER="sankanouadmin"
 CONTAINER_ENV_NAME="sankanou-env"
 API_APP_NAME="sankanou-api"
 WEB_APP_NAME="sankanou-web"
 
 # シークレット生成 (環境変数で上書き可能)
-DB_ADMIN_PASSWORD="${DB_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 32)}"
 AI_RESOURCE_NAME="sankanou-ai"
 AI_RESOURCE_LOCATION="eastus2"  # AIServicesはEast US 2で利用可能 (Claude対応リージョン)
@@ -52,50 +48,44 @@ ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].v
 echo "   ACR: $ACR_LOGIN_SERVER"
 
 # ============================================
-# 3. PostgreSQL Flexible Server
+# 3. Database (Neon - free serverless Postgres)
 # ============================================
+# Azure Database for PostgreSQL Flexible Serverは常時起動の時間課金(月額約$15-18)が
+# 避けられないため、代わりにNeon(https://neon.tech)の無料枠を使う。Neonは標準的な
+# Postgresプロトコルで、pgvector拡張にも対応しており、本アプリのコード変更は不要。
 echo ""
-echo ">>> Step 3: Creating PostgreSQL Flexible Server..."
-az postgres flexible-server create \
-    --resource-group "$RESOURCE_GROUP" \
-    --name "$DB_SERVER_NAME" \
-    --location "$LOCATION" \
-    --admin-user "$DB_ADMIN_USER" \
-    --admin-password "$DB_ADMIN_PASSWORD" \
-    --sku-name Standard_B1ms \
-    --tier Burstable \
-    --storage-size 32 \
-    --version 16 \
-    --yes \
-    --output none
+echo ">>> Step 3: Configuring database (Neon)..."
+if [ -z "${NEON_DATABASE_URL:-}" ]; then
+    echo "ERROR: NEON_DATABASE_URL is not set." >&2
+    echo "" >&2
+    echo "Set up a free Neon Postgres database first:" >&2
+    echo "  1. Sign up at https://neon.tech (free tier)" >&2
+    echo "  2. Create a project (nearest region to Japan: 'ap-southeast-1' / Singapore)" >&2
+    echo "  3. In the Neon SQL Editor, run: CREATE EXTENSION IF NOT EXISTS vector;" >&2
+    echo "  4. Copy the connection string from the Neon dashboard" >&2
+    echo "  5. Re-run:" >&2
+    echo "     export NEON_DATABASE_URL='postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require'" >&2
+    echo "     ./deploy.sh" >&2
+    exit 1
+fi
 
-echo "   Configuring firewall..."
-az postgres flexible-server firewall-rule create \
-    --resource-group "$RESOURCE_GROUP" \
-    --name "$DB_SERVER_NAME" \
-    --rule-name "AllowAzureServices" \
-    --start-ip-address 0.0.0.0 \
-    --end-ip-address 0.0.0.0 \
-    --output none
-
-echo "   Enabling pgvector..."
-az postgres flexible-server parameter set \
-    --resource-group "$RESOURCE_GROUP" \
-    --server-name "$DB_SERVER_NAME" \
-    --name azure.extensions \
-    --value "vector,uuid-ossp" \
-    --output none
-
-echo "   Creating database..."
-az postgres flexible-server db create \
-    --resource-group "$RESOURCE_GROUP" \
-    --server-name "$DB_SERVER_NAME" \
-    --database-name "$DB_NAME" \
-    --output none
-
-DB_HOST="${DB_SERVER_NAME}.postgres.database.azure.com"
-DATABASE_URL="postgresql+asyncpg://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?ssl=require"
-echo "   Database: $DB_HOST"
+# NeonのURLスキーム(postgresql:// / postgres://)をasyncpgドライバ指定に変換し、
+# sslmode=require (libpq形式) をこのアプリが期待する ssl=require (asyncpg形式) に揃える。
+# channel_binding=require はasyncpgが認識せず接続エラーになるため除去する。
+DATABASE_URL="${NEON_DATABASE_URL/#postgresql:\/\//postgresql+asyncpg://}"
+DATABASE_URL="${DATABASE_URL/#postgres:\/\//postgresql+asyncpg://}"
+DATABASE_URL="${DATABASE_URL/sslmode=require/ssl=require}"
+DATABASE_URL="${DATABASE_URL/&channel_binding=require/}"
+DATABASE_URL="${DATABASE_URL/channel_binding=require&/}"
+DATABASE_URL="${DATABASE_URL/channel_binding=require/}"
+if [[ "$DATABASE_URL" != *"ssl="* ]]; then
+    if [[ "$DATABASE_URL" == *"?"* ]]; then
+        DATABASE_URL="${DATABASE_URL}&ssl=require"
+    else
+        DATABASE_URL="${DATABASE_URL}?ssl=require"
+    fi
+fi
+echo "   Using Neon database (from NEON_DATABASE_URL)"
 
 # ============================================
 # 4. Azure AI Foundry (AIServices) リソース
@@ -171,10 +161,15 @@ echo "   API image: $ACR_LOGIN_SERVER/api:latest"
 # ============================================
 echo ""
 echo ">>> Step 6: Creating Container Apps environment..."
+# コスト最適化: --logs-destination none でLog Analyticsワークスペースの自動作成を回避する。
+# (デフォルトのままだとログ取り込み量に応じた課金が常時発生する。ライブログは
+#  `az containerapp logs show` で引き続き確認可能。過去ログの検索が必要になった場合のみ
+#  Log Analyticsワークスペースを別途アタッチすること)
 az containerapp env create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$CONTAINER_ENV_NAME" \
     --location "$LOCATION" \
+    --logs-destination none \
     --output none
 
 # ============================================
@@ -284,7 +279,7 @@ echo ""
 echo "  API:  $API_URL"
 echo "  Web:  $WEB_URL"
 echo ""
-echo "  DB Password:  (stored as secret)"
+echo "  DB:           Neon (see NEON_DATABASE_URL)"
 echo "  JWT Secret:   (stored as secret)"
 echo ""
 echo "Next steps:"
@@ -293,4 +288,8 @@ echo "     az containerapp exec -g $RESOURCE_GROUP -n $API_APP_NAME --command 'p
 echo "  2. Test:  curl $API_URL/api/v1/health"
 echo "  3. Open:  $WEB_URL"
 echo ""
+echo "Cost note: Container Apps + Neon(無料枠)構成のため、アイドル時はほぼ\$0。"
+echo "固定費はACR Basic(月額約\$5)のみです。DBの起動/停止操作は不要(Neonが自動スケール)。"
+echo ""
 echo "Tear down: az group delete --name $RESOURCE_GROUP --yes --no-wait"
+echo "           (Neonのプロジェクトは別途 neon.tech のダッシュボードから削除してください)"

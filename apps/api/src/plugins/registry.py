@@ -40,27 +40,22 @@ def get_all_plugins() -> dict[str, CoursePlugin]:
 
 
 def get_all_synergy_areas() -> list[dict]:
-    """全資格間のシナジー定義を統合して返す"""
-    if not _PLUGINS:
-        _register_defaults()
+    """全資格間のシナジー定義を統合して返す
 
-    seen: set[str] = set()
-    result: list[dict] = []
+    各プラグインが個別に定義する get_synergy_areas() は「自分視点」の重複表明であり、
+    表記ゆれや登録順による欠落バグの温床だった。集約はカノニカルな単一情報源
+    (src/plugins/synergy_map.py) から行う。
+    """
+    from src.plugins.synergy_map import get_canonical_synergy_areas
 
-    for code, plugin in _PLUGINS.items():
-        for syn in plugin.get_synergy_areas():
-            # 重複排除 (area_nameで)
-            if syn.area_name not in seen:
-                seen.add(syn.area_name)
-                result.append(
-                    {
-                        "area_name": syn.area_name,
-                        "overlap_pct": syn.overlap_pct,
-                        "courses": [code] + syn.related_courses,
-                        "term_mappings": syn.term_mappings,
-                    }
-                )
-
-    # 重複率の高い順にソート
-    result.sort(key=lambda x: x["overlap_pct"], reverse=True)
-    return result
+    return [
+        {
+            "area_name": area.area_name,
+            "overlap_pct": area.overlap_pct,
+            "courses": area.courses,
+            "term_mappings": area.term_mappings,
+            "topic_names": area.topic_names,
+            "description": area.description,
+        }
+        for area in get_canonical_synergy_areas()
+    ]

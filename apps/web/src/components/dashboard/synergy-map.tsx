@@ -40,7 +40,7 @@ export default function SynergyMap() {
 
   return (
     <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger">
+      <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger" tabIndex={0}>
         シナジーマップ
         <span className="tooltip-content">CIA/CISA/CFEに共通するテーマ領域の重複度を表示。重複率が高いほど、一度の学習で複数資格に効果的です。</span>
       </h3>
@@ -63,7 +63,7 @@ export default function SynergyMap() {
       </div>
 
       {/* 中央統計 */}
-      <div className="text-center py-1 tooltip-trigger">
+      <div className="text-center py-1 tooltip-trigger" tabIndex={0}>
         <div className="text-2xl font-bold text-white tabular-nums">
           {Math.round(data.avg_overlap_pct)}%
         </div>

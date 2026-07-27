@@ -49,7 +49,7 @@ export default function PassProbability({
         >
           {courseCode}
         </span>
-        <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger">
+        <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger" tabIndex={0}>
           合格確率予測
           <span className="tooltip-content">カード習得率・正答率・学習進捗から算出した合格確率の予測値です。学習を継続すると精度が向上します。</span>
         </h3>
@@ -88,24 +88,24 @@ export default function PassProbability({
 
       {/* 統計 */}
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger">
+        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">予測スコア</div>
           <div className="font-bold text-zinc-200">{data.predicted_score}点</div>
           <span className="tooltip-content">学習データから予測される試験スコア</span>
         </div>
-        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger">
+        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">合格基準</div>
           <div className="font-bold text-zinc-200">{data.passing_score}%</div>
           <span className="tooltip-content">この資格試験の合格に必要な最低スコア</span>
         </div>
-        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger">
+        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">学習済</div>
           <div className="font-bold text-zinc-200">
             {data.studied_topics}/{data.total_topics}
           </div>
           <span className="tooltip-content">学習を開始したトピック数 / 全トピック数</span>
         </div>
-        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger">
+        <div className="bg-zinc-800/60 rounded-lg p-2 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">弱点</div>
           <div className="font-bold text-orange-400">
             {data.weak_topics.length}件

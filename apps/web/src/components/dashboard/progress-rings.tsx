@@ -64,19 +64,19 @@ export default function ProgressRing({
 
       {/* Stats */}
       <div className="text-sm text-zinc-500 space-y-1 w-full">
-        <div className="flex justify-between tooltip-trigger">
+        <div className="flex justify-between tooltip-trigger" tabIndex={0}>
           <span>習得</span>
           <span className="text-zinc-300 tabular-nums">
             {mastered}/{totalCards}
           </span>
           <span className="tooltip-content">FSRS評価でGood以上を獲得し、習得と判定されたカード数</span>
         </div>
-        <div className="flex justify-between tooltip-trigger">
+        <div className="flex justify-between tooltip-trigger" tabIndex={0}>
           <span>本日復習</span>
           <span className="text-zinc-300 tabular-nums">{dueToday}枚</span>
           <span className="tooltip-content">FSRSが算出した今日復習すべきカード数</span>
         </div>
-        <div className="flex justify-between tooltip-trigger">
+        <div className="flex justify-between tooltip-trigger" tabIndex={0}>
           <span>合格確率</span>
           <span className="font-semibold tabular-nums" style={{ color }}>
             {Math.round(passProbability * 100)}%

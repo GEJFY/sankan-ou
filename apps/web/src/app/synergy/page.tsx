@@ -27,11 +27,27 @@ interface SynergyArea {
   term_mappings: Record<string, string>;
 }
 
-const CERT_OPTIONS = [
-  { code: "CIA", label: "CIA", color: "#e94560" },
-  { code: "CISA", label: "CISA", color: "#0891b2" },
-  { code: "CFE", label: "CFE", color: "#7c3aed" },
-];
+interface SynergyMatrixCourseCell {
+  course_code: string;
+  topic_name: string;
+  term: string;
+  mastery_score: number;
+  reviewed_count: number;
+}
+
+interface SynergyMatrixRow {
+  area_name: string;
+  overlap_pct: number;
+  description: string;
+  courses: SynergyMatrixCourseCell[];
+  efficiency_tip: string | null;
+}
+
+const CERT_OPTIONS = (["CIA", "CISA", "CFE"] as const).map((code) => ({
+  code,
+  label: code,
+  color: COURSE_COLORS[code],
+}));
 
 export default function SynergyPage() {
   const [cards, setCards] = useState<SynergyCard[]>([]);
@@ -45,10 +61,15 @@ export default function SynergyPage() {
 
   const [selectedCerts, setSelectedCerts] = useState<string[]>(["CIA", "CISA", "CFE"]);
   const [cardCount, setCardCount] = useState(10);
+  const [matrix, setMatrix] = useState<SynergyMatrixRow[]>([]);
+  const [showMatrix, setShowMatrix] = useState(true);
 
   useEffect(() => {
     apiFetch<{ synergy_areas: SynergyArea[] }>("/synergy/areas")
       .then((data) => setAreas(data.synergy_areas))
+      .catch(() => {});
+    apiFetch<{ matrix: SynergyMatrixRow[] }>("/synergy/matrix")
+      .then((data) => setMatrix(data.matrix))
       .catch(() => {});
   }, []);
 
@@ -154,6 +175,100 @@ export default function SynergyPage() {
             </div>
           ))}
         </div>
+
+        {/* Curriculum side-by-side matrix: 重複学習の効率化分析 */}
+        {matrix.length > 0 && (
+          <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-4">
+            <button
+              onClick={() => setShowMatrix((v) => !v)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <div>
+                <h2 className="text-base font-semibold text-zinc-200">
+                  カリキュラム横並び分析
+                </h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  資格ごとのシラバスを並べて比較し、重複学習を効率化するヒントを表示します
+                </p>
+              </div>
+              <span className="text-xs text-zinc-500">{showMatrix ? "隠す" : "表示"}</span>
+            </button>
+
+            {showMatrix && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse min-w-[640px]">
+                  <thead>
+                    <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                      <th className="py-2 pr-3 font-medium">重複領域</th>
+                      <th className="py-2 pr-3 font-medium">重複率</th>
+                      {(["CIA", "CISA", "CFE", "USCPA"] as const).map((code) => (
+                        <th key={code} className="py-2 pr-3 font-medium">
+                          <span
+                            className="px-1.5 py-0.5 rounded text-white"
+                            style={{ backgroundColor: COURSE_COLORS[code] ?? "#666" }}
+                          >
+                            {code}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matrix.map((row, i) => (
+                      <tr key={i} className="border-b border-zinc-800/50 align-top">
+                        <td className="py-2 pr-3 text-zinc-300 font-medium max-w-[160px]">
+                          {row.area_name}
+                        </td>
+                        <td className="py-2 pr-3 text-zinc-500 tabular-nums">
+                          {row.overlap_pct}%
+                        </td>
+                        {(["CIA", "CISA", "CFE", "USCPA"] as const).map((code) => {
+                          const cell = row.courses.find((c) => c.course_code === code);
+                          if (!cell) {
+                            return (
+                              <td key={code} className="py-2 pr-3 text-zinc-700">
+                                —
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={code} className="py-2 pr-3">
+                              <div className="text-zinc-400">{cell.topic_name}</div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <div className="w-12 h-1 bg-zinc-800 rounded-full">
+                                  <div
+                                    className="h-full rounded-full bg-emerald-500"
+                                    style={{ width: `${cell.mastery_score * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-zinc-600 tabular-nums">
+                                  {Math.round(cell.mastery_score * 100)}%
+                                </span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="space-y-1.5 mt-3">
+                  {matrix
+                    .filter((row) => row.efficiency_tip)
+                    .map((row, i) => (
+                      <div
+                        key={i}
+                        className="text-xs text-emerald-400/90 bg-emerald-950/20 border border-emerald-900/30 rounded-lg px-3 py-2"
+                      >
+                        <strong className="text-emerald-300">{row.area_name}:</strong>{" "}
+                        {row.efficiency_tip}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Setup panel */}
         {!started && !isLoading && (

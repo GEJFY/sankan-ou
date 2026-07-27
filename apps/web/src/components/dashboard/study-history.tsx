@@ -35,7 +35,7 @@ export default function StudyHistory() {
 
   return (
     <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-3">
-      <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger">
+      <h3 className="text-sm font-semibold text-zinc-300 tooltip-trigger" tabIndex={0}>
         学習履歴（14日間）
         <span className="tooltip-content">直近14日間の学習カード数と正答率の推移。バーの色は正答率を反映しています（緑=80%以上, 黄=50%以上, 赤=50%未満）。</span>
       </h3>
@@ -69,14 +69,14 @@ export default function StudyHistory() {
 
       {/* サマリー */}
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="tooltip-trigger">
+        <div className="tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">合計</div>
           <div className="font-bold text-zinc-200">
             {recent.reduce((s, d) => s + d.cards_reviewed, 0)}枚
           </div>
           <span className="tooltip-content">14日間に復習したカードの合計枚数</span>
         </div>
-        <div className="tooltip-trigger">
+        <div className="tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">平均/日</div>
           <div className="font-bold text-zinc-200">
             {Math.round(
@@ -86,7 +86,7 @@ export default function StudyHistory() {
           </div>
           <span className="tooltip-content">1日あたりの平均復習カード数</span>
         </div>
-        <div className="tooltip-trigger">
+        <div className="tooltip-trigger" tabIndex={0}>
           <div className="text-zinc-500">正答率</div>
           <div className="font-bold text-emerald-400">
             {Math.round(

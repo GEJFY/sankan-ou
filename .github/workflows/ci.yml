@@ -36,6 +36,34 @@ jobs:
         working-directory: apps/api
         run: pip install -e ".[dev]"
 
+      - name: Lint (ruff)
+        working-directory: apps/api
+        # apps/api/src has pre-existing ruff violations (~58 as of this change,
+        # mostly unused imports / datetime.UTC alias suggestions) that are out
+        # of scope for this CI/CD-only change to fix. Keep this non-blocking
+        # for now so it still runs and reports; drop continue-on-error once
+        # that backlog is cleared so lint errors actually fail CI.
+        continue-on-error: true
+        run: ruff check src/
+
+      - name: Type check (mypy)
+        working-directory: apps/api
+        # Same as above: apps/api/src currently has ~128 pre-existing mypy
+        # errors under the `strict = true` config in pyproject.toml (mostly
+        # missing return-type annotations and FastAPI's untyped route
+        # decorators). Non-blocking until that backlog is cleared.
+        continue-on-error: true
+        run: mypy src/
+
+      - name: Dependency security scan (pip-audit)
+        working-directory: apps/api
+        # Non-blocking: reports known-vulnerability findings without failing
+        # the build on pre-existing/transitive advisories.
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit
+
       - name: Create database tables
         working-directory: apps/api
         env:
@@ -64,6 +92,28 @@ jobs:
       - name: Install dependencies
         working-directory: apps/web
         run: npm ci
+
+      - name: Lint
+        working-directory: apps/web
+        # apps/web has no eslint / eslint-config-next devDependency or ESLint
+        # config yet, so `next lint` (this script) tries to launch its
+        # interactive "how would you like to configure ESLint?" setup flow -
+        # verified in a non-TTY shell this hangs instead of failing fast (CI=true
+        # does not change that). timeout-minutes bounds the damage and
+        # continue-on-error keeps CI green until eslint + eslint-config-next
+        # are added as devDependencies and a config file is committed - that
+        # dependency addition is out of scope here (package.json edits in this
+        # change are restricted to the scripts section).
+        continue-on-error: true
+        timeout-minutes: 2
+        run: npm run lint
+
+      - name: Dependency security scan (npm audit)
+        working-directory: apps/web
+        # Non-blocking: reports known-vulnerability findings (currently 3
+        # high-severity) without failing the build.
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
       - name: Type check & build
         working-directory: apps/web

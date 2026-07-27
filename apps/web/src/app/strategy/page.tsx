@@ -21,7 +21,15 @@ interface PredictionData {
   total_topics: number;
   studied_topics: number;
   recommendation: string;
+  background_note: string | null;
 }
+
+const BACKGROUND_OPTIONS = [
+  { key: "accountant", label: "会計士・経理実務家" },
+  { key: "it_engineer", label: "ITエンジニア・AIエンジニア" },
+] as const;
+
+const BACKGROUND_STORAGE_KEY = "sankanou_backgrounds";
 
 interface ROIData {
   total_cards: number;
@@ -40,38 +48,63 @@ interface CourseStrategy {
 export default function StrategyPage() {
   const [strategies, setStrategies] = useState<CourseStrategy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [backgrounds, setBackgrounds] = useState<string[]>([]);
 
   useEffect(() => {
-    const load = async () => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem(BACKGROUND_STORAGE_KEY) : null;
+    if (saved) {
       try {
-        const coursesData = await apiFetch<{ courses: Course[] }>("/courses");
-        const results: CourseStrategy[] = [];
+        setBackgrounds(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
 
-        for (const course of coursesData.courses) {
+  const load = async (bg: string[]) => {
+    setIsLoading(true);
+    try {
+      const coursesData = await apiFetch<{ courses: Course[] }>("/courses");
+      const bgParam = bg.length > 0 ? `?background=${bg.join(",")}` : "";
+
+      const results: CourseStrategy[] = await Promise.all(
+        coursesData.courses.map(async (course) => {
           let prediction: PredictionData | null = null;
           let roi: ROIData | null = null;
           try {
             prediction = await apiFetch<PredictionData>(
-              `/predictions/${course.id}`
+              `/predictions/${course.id}${bgParam}`
             );
           } catch {}
           try {
             roi = await apiFetch<ROIData>(`/predictions/${course.id}/roi`);
           } catch {}
-          results.push({ course, prediction, roi });
-        }
+          return { course, prediction, roi };
+        })
+      );
 
-        results.sort(
-          (a, b) =>
-            (a.prediction?.pass_probability ?? 0) -
-            (b.prediction?.pass_probability ?? 0)
-        );
-        setStrategies(results);
-      } catch {}
-      setIsLoading(false);
-    };
-    load();
-  }, []);
+      results.sort(
+        (a, b) =>
+          (a.prediction?.pass_probability ?? 0) -
+          (b.prediction?.pass_probability ?? 0)
+      );
+      setStrategies(results);
+    } catch {}
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    load(backgrounds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backgrounds]);
+
+  const toggleBackground = (key: string) => {
+    setBackgrounds((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(BACKGROUND_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
 
   const recommendedOrder = [...strategies]
     .sort(
@@ -116,6 +149,31 @@ export default function StrategyPage() {
           </p>
         </div>
 
+        {/* Background selector: 会計士・ITエンジニア等の実務経験から最短合格ルートを提案 */}
+        <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-3">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-200">あなたの背景（最短合格ルート）</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              実務経験がある分野を選ぶと、その素地を活かして学習時間を節約できる領域を提案します
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {BACKGROUND_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => toggleBackground(opt.key)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  backgrounds.includes(opt.key)
+                    ? "bg-blue-600 text-white"
+                    : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Recommended order */}
         <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6 space-y-4">
           <h2 className="text-base font-semibold text-zinc-200">推奨受験順序</h2>
@@ -150,14 +208,14 @@ export default function StrategyPage() {
         {/* Summary stats */}
         <div className="bg-zinc-900/50 rounded-2xl border border-zinc-800/60 p-6">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="tooltip-trigger">
+            <div className="tooltip-trigger" tabIndex={0}>
               <div className="text-2xl font-bold text-blue-400 tabular-nums">
                 {Math.round(totalRemainingHours)}h
               </div>
               <div className="text-xs text-zinc-500 mt-0.5">推定残り学習時間</div>
               <span className="tooltip-content">未習得カードを全て学習するのに必要な推定時間です。</span>
             </div>
-            <div className="tooltip-trigger">
+            <div className="tooltip-trigger" tabIndex={0}>
               <div className="text-2xl font-bold text-zinc-200 tabular-nums">
                 {strategies.reduce(
                   (sum, s) => sum + (s.roi?.mastered_cards ?? 0),
@@ -167,7 +225,7 @@ export default function StrategyPage() {
               <div className="text-xs text-zinc-500 mt-0.5">習得済みカード</div>
               <span className="tooltip-content">FSRS評価でGood以上を一定回数以上獲得したカード数です。</span>
             </div>
-            <div className="tooltip-trigger">
+            <div className="tooltip-trigger" tabIndex={0}>
               <div className="text-2xl font-bold text-orange-400 tabular-nums">
                 {strategies.reduce(
                   (sum, s) => sum + (s.roi?.remaining_cards ?? 0),
@@ -197,7 +255,7 @@ export default function StrategyPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger">
+              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger" tabIndex={0}>
                 <div className="text-zinc-500">合格確率</div>
                 <div
                   className="text-xl font-bold tabular-nums"
@@ -207,21 +265,21 @@ export default function StrategyPage() {
                 </div>
                 <span className="tooltip-content">現在の学習データから算出した本試験の合格確率</span>
               </div>
-              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger">
+              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger" tabIndex={0}>
                 <div className="text-zinc-500">予測スコア</div>
                 <div className="text-xl font-bold tabular-nums text-zinc-200">
                   {s.prediction?.predicted_score ?? 0}点
                 </div>
                 <span className="tooltip-content">SRSカードの習得率と正答率から予測した試験スコア</span>
               </div>
-              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger">
+              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger" tabIndex={0}>
                 <div className="text-zinc-500">残り学習時間</div>
                 <div className="text-xl font-bold tabular-nums text-zinc-200">
                   {s.roi?.estimated_hours_remaining ?? 0}h
                 </div>
                 <span className="tooltip-content">未習得カードを全て学習するのに必要な推定時間</span>
               </div>
-              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger">
+              <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-3 tooltip-trigger" tabIndex={0}>
                 <div className="text-zinc-500">進捗</div>
                 <div className="text-xl font-bold tabular-nums text-zinc-200">
                   {s.roi
@@ -293,6 +351,13 @@ export default function StrategyPage() {
             {s.prediction?.recommendation && (
               <div className="text-xs text-zinc-500 bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
                 {s.prediction.recommendation}
+              </div>
+            )}
+
+            {/* Background-aware fast-track note */}
+            {s.prediction?.background_note && (
+              <div className="text-xs text-emerald-400/90 bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-3">
+                <strong className="text-emerald-300">最短ルート:</strong> {s.prediction.background_note}
               </div>
             )}
           </div>

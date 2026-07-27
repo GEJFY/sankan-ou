@@ -50,7 +50,7 @@ class DailyHistory(BaseModel):
     date: str
     cards_reviewed: int
     correct: int
-    minutes: int
+    minutes: float
 
 
 class HistoryResponse(BaseModel):

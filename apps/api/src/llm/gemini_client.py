@@ -1,5 +1,6 @@
 """Google Gemini client - Vertex AI / Direct API 両対応"""
 
+import asyncio
 import base64
 import logging
 
@@ -64,7 +65,9 @@ async def generate_slide_image(
 画像として出力してください。"""
 
     try:
-        response = client.models.generate_content(
+        # google-genai SDKは同期呼び出しのため、イベントループをブロックしないよう別スレッドで実行する
+        response = await asyncio.to_thread(
+            client.models.generate_content,
             model=settings.google_gemini_image_model,
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -100,7 +103,8 @@ async def generate_text(prompt: str, system: str = "") -> str:
         config = types.GenerateContentConfig(system_instruction=system)
 
     try:
-        response = client.models.generate_content(
+        response = await asyncio.to_thread(
+            client.models.generate_content,
             model=settings.google_gemini_model,
             contents=prompt,
             config=config,
@@ -112,25 +116,48 @@ async def generate_text(prompt: str, system: str = "") -> str:
 
 
 async def stream_generate_text(prompt: str, system: str = ""):
-    """Gemini でテキストをストリーミング生成（SSE用）"""
+    """Gemini でテキストをストリーミング生成（SSE用）
+
+    google-genai SDKの generate_content_stream は同期イテレータのため、
+    そのままasync関数内でforループするとチャンク取得のたびにイベントループを
+    ブロックしてしまう。別スレッドで同期イテレーションを行い、asyncio.Queue経由で
+    非同期ジェネレータに橋渡しする。
+    """
     client = _get_client()
 
     config = types.GenerateContentConfig()
     if system:
         config = types.GenerateContentConfig(system_instruction=system)
 
-    try:
-        response_stream = client.models.generate_content_stream(
-            model=settings.google_gemini_model,
-            contents=prompt,
-            config=config,
-        )
-        for chunk in response_stream:
-            if chunk.text:
-                yield chunk.text
-    except Exception as e:
-        logger.error(f"Gemini stream error: {e}")
-        raise RuntimeError(f"Geminiストリーミング生成に失敗しました: {type(e).__name__}") from e
+    loop = asyncio.get_event_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    sentinel = object()
+
+    def _produce() -> None:
+        try:
+            response_stream = client.models.generate_content_stream(
+                model=settings.google_gemini_model,
+                contents=prompt,
+                config=config,
+            )
+            for chunk in response_stream:
+                if chunk.text:
+                    loop.call_soon_threadsafe(queue.put_nowait, chunk.text)
+        except Exception as e:  # noqa: BLE001
+            loop.call_soon_threadsafe(queue.put_nowait, e)
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, sentinel)
+
+    loop.run_in_executor(None, _produce)
+
+    while True:
+        item = await queue.get()
+        if item is sentinel:
+            break
+        if isinstance(item, Exception):
+            logger.error(f"Gemini stream error: {item}")
+            raise RuntimeError(f"Geminiストリーミング生成に失敗しました: {type(item).__name__}") from item
+        yield item
 
 
 def is_gemini_available() -> bool:

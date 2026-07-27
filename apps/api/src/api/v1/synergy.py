@@ -1,11 +1,10 @@
 """Synergy endpoints - 資格間シナジー情報"""
 
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 
-from src.deps import DbSession
+from src.deps import CurrentUser, DbSession
 from src.models.card import Card, CardReview
 from src.models.course import Course, Topic
 from src.plugins.registry import get_all_plugins, get_all_synergy_areas, get_plugin
@@ -134,6 +133,90 @@ async def get_synergy_study_cards(
         )
 
     return {"cards": cards_out, "total": len(cards_out)}
+
+
+@router.get("/matrix")
+async def get_synergy_matrix(db: DbSession, current_user: CurrentUser):
+    """カリキュラム横並び分析 - シナジー領域ごとに資格を横並びにし、
+    ユーザーの習熟度から「重複学習をどれだけ節約できるか」を示す"""
+    areas = get_all_synergy_areas()
+
+    rows = []
+    for area in areas:
+        course_cells = []
+        masteries: dict[str, float] = {}
+        for code, topic_name in area.get("topic_names", {}).items():
+            course = (
+                await db.execute(select(Course).where(Course.code == code))
+            ).scalar_one_or_none()
+            if not course:
+                continue
+            topic = (
+                await db.execute(
+                    select(Topic).where(
+                        Topic.course_id == course.id, Topic.name == topic_name
+                    )
+                )
+            ).scalar_one_or_none()
+
+            mastery_score = 0.0
+            reviewed_count = 0
+            if topic:
+                stats = (
+                    await db.execute(
+                        select(
+                            func.count(CardReview.id),
+                            func.coalesce(func.sum(CardReview.lapses), 0),
+                        )
+                        .select_from(Card)
+                        .join(
+                            CardReview,
+                            (CardReview.card_id == Card.id)
+                            & (CardReview.user_id == current_user.id),
+                        )
+                        .where(Card.topic_id == topic.id)
+                    )
+                ).one()
+                reviewed_count = stats[0] or 0
+                lapses = stats[1] or 0
+                if reviewed_count > 0:
+                    mastery_score = max(0.0, 1.0 - (lapses / (reviewed_count * 3)))
+
+            masteries[code] = mastery_score
+            course_cells.append(
+                {
+                    "course_code": code,
+                    "topic_name": topic_name,
+                    "term": area.get("term_mappings", {}).get(code, ""),
+                    "mastery_score": round(mastery_score, 4),
+                    "reviewed_count": reviewed_count,
+                }
+            )
+
+        # 効率化のヒント: 1資格で既に高習熟(>=0.6)、他資格でまだ低い(<0.3)場合は
+        # 「そちらは軽い確認で十分」というメッセージを出す
+        efficiency_tip = None
+        strong = [c for c in course_cells if c["mastery_score"] >= 0.6]
+        weak = [c for c in course_cells if c["mastery_score"] < 0.3]
+        if strong and weak and len(course_cells) > 1:
+            strong_codes = "・".join(c["course_code"] for c in strong)
+            weak_codes = "・".join(c["course_code"] for c in weak)
+            efficiency_tip = (
+                f"{strong_codes}で既にこの領域を習得済みです。{weak_codes}では"
+                "同じ概念の用語の違いだけ確認すれば、ゼロから学ぶより短時間で済みます。"
+            )
+
+        rows.append(
+            {
+                "area_name": area["area_name"],
+                "overlap_pct": area["overlap_pct"],
+                "description": area.get("description", ""),
+                "courses": course_cells,
+                "efficiency_tip": efficiency_tip,
+            }
+        )
+
+    return {"matrix": rows, "total_areas": len(rows)}
 
 
 @router.get("/overview")

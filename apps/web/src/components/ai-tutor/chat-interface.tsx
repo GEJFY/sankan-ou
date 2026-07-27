@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { API_BASE_URL } from "@/lib/constants";
+import { API_BASE_URL, TOKEN_STORAGE_KEY } from "@/lib/constants";
 import LevelSelector from "./level-selector";
 import { Send, Volume2, VolumeX, Trash2 } from "lucide-react";
 
@@ -140,7 +140,7 @@ export default function ChatInterface() {
       };
 
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("sankanou_token") : null;
+        const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 

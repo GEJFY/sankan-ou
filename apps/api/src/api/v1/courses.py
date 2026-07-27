@@ -1,5 +1,7 @@
 """Course endpoints"""
 
+import uuid
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
@@ -32,7 +34,7 @@ async def list_courses(
 
 
 @router.get("/{course_id}", response_model=CourseOut)
-async def get_course(course_id: str, db: DbSession) -> CourseOut:
+async def get_course(course_id: uuid.UUID, db: DbSession) -> CourseOut:
     """コース詳細取得"""
     stmt = select(Course).where(Course.id == course_id)
     result = await db.execute(stmt)
@@ -43,7 +45,7 @@ async def get_course(course_id: str, db: DbSession) -> CourseOut:
 
 
 @router.get("/{course_id}/topics", response_model=TopicListResponse)
-async def list_topics(course_id: str, db: DbSession) -> TopicListResponse:
+async def list_topics(course_id: uuid.UUID, db: DbSession) -> TopicListResponse:
     """コース別トピック一覧取得（子トピックのみ = level 1）"""
     stmt = (
         select(Topic)

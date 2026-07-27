@@ -53,12 +53,12 @@ export default function StreakBadge() {
 
       {/* Today stats */}
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger">
+        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-lg font-bold text-zinc-200 tabular-nums">{stats.cards_reviewed}</div>
           <div className="text-zinc-600">カード復習</div>
           <span className="tooltip-content">今日復習したフラッシュカードの総数</span>
         </div>
-        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger">
+        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-lg font-bold text-zinc-200 tabular-nums">
             {stats.cards_reviewed > 0
               ? Math.round((stats.cards_correct / stats.cards_reviewed) * 100)
@@ -68,12 +68,12 @@ export default function StreakBadge() {
           <div className="text-zinc-600">正答率</div>
           <span className="tooltip-content">Good以上の評価をしたカードの割合</span>
         </div>
-        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger">
+        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-lg font-bold text-zinc-200 tabular-nums">{durationMin}</div>
           <div className="text-zinc-600">学習時間(分)</div>
           <span className="tooltip-content">今日の合計学習時間（分単位）</span>
         </div>
-        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger">
+        <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center tooltip-trigger" tabIndex={0}>
           <div className="text-lg font-bold text-zinc-200 tabular-nums">{stats.session_count}</div>
           <div className="text-zinc-600">セッション</div>
           <span className="tooltip-content">今日行った学習セッションの回数</span>

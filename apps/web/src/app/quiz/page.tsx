@@ -4,22 +4,11 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PageHeader from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api-client";
+import { dedupeByName } from "@/lib/utils";
+import type { QuizQuestion } from "@/types";
 import { Play, ChevronRight, RotateCcw } from "lucide-react";
 
-interface Choice {
-  text: string;
-  is_correct: boolean;
-  explanation: string;
-}
-
-interface Question {
-  id: string;
-  stem: string;
-  choices: Choice[];
-  explanation: string;
-  difficulty: number;
-  course_code: string;
-}
+type Question = QuizQuestion;
 
 interface Course {
   id: string;
@@ -65,9 +54,7 @@ export default function QuizPage() {
     setSelectedTopic("");
     apiFetch<{ topics: Topic[] }>(`/courses/${selectedCourse}/topics`)
       .then((data) => {
-        const unique = Array.from(
-          new Map(data.topics.map((t) => [t.name, t])).values()
-        );
+        const unique = dedupeByName(data.topics);
         setTopics(unique);
         if (unique.length > 0) {
           const idx = Math.floor(Math.random() * unique.length);
@@ -79,7 +66,7 @@ export default function QuizPage() {
 
   const generateQuestions = async () => {
     if (!selectedCourse || !selectedTopic) {
-      setError("トピックが見つかりません。コースのシードデータを確認してください。");
+      setError("このコースにはまだ学習コンテンツが登録されていません。しばらくしてから再度お試しください。");
       return;
     }
 
@@ -309,12 +296,15 @@ export default function QuizPage() {
                 Q{currentQ + 1} / {questions.length}
               </span>
               <span className="flex items-center gap-1">
-                {"difficulty" in question && (
-                  <span className="text-yellow-500/70">
-                    {"★".repeat(question.difficulty)}
-                    <span className="text-zinc-700">{"★".repeat(Math.max(0, 3 - question.difficulty))}</span>
+                <span
+                  className="text-yellow-500/70"
+                  aria-label={`難易度 ${question.difficulty}/3`}
+                >
+                  <span aria-hidden="true">{"★".repeat(question.difficulty)}</span>
+                  <span className="text-zinc-700" aria-hidden="true">
+                    {"★".repeat(Math.max(0, 3 - question.difficulty))}
                   </span>
-                )}
+                </span>
               </span>
             </div>
 

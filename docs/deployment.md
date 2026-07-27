@@ -10,14 +10,63 @@ GRC Triple Crown は以下の Azure リソースで構成されます。
 | Container Registry | `sankanouacr` | Japan East | Docker イメージ |
 | Container App | `sankanou-api` | Japan East | FastAPI バックエンド |
 | Container App | `sankanou-web` | Japan East | Next.js フロントエンド |
-| PostgreSQL Flexible Server | `sankanou-db` | Japan East | データベース |
 | AI Services | `sankanou-ai` | East US 2 | GPT-5 / Claude |
+| Neon (Azure外) | 任意のプロジェクト名 | ap-southeast-1 推奨 | データベース (PostgreSQL + pgvector) |
+
+データベースはAzure Database for PostgreSQL Flexible Serverではなく、[Neon](https://neon.tech)
+(無料枠のあるサーバーレスPostgres)を使う構成になっています。理由は下記コスト最適化の項を参照。
 
 ## 前提条件
 
 - Azure CLI (`az`) がインストール済み
 - `az login` でログイン済み
-- サブスクリプションが選択済み
+- サブスクリプションが選択済み(サブスクリプションを切り替えた/新規契約した場合は下記を実行)
+- Neonアカウント作成済み・`NEON_DATABASE_URL` を取得済み(下記「Neonのセットアップ」参照)
+
+```bash
+az account list --output table          # 利用可能なサブスクリプション一覧
+az account set --subscription "<サブスクリプション名 or ID>"
+az account show --output table          # 選択されていることを確認
+```
+
+`rg-sankanou` 等のリソース名は前提として**存在しない**（＝新規サブスクリプションでは何もない状態）として
+`./deploy.sh` はゼロから全リソースを作成します。`deploy.ps1` は既存リソースへの追加デプロイ専用
+（RG/ACRが存在する前提）なので、新規サブスクリプションでのフル構築には `deploy.sh` を使ってください
+（Windowsの場合は Git Bash / WSL 経由で実行）。
+
+## Neonのセットアップ
+
+1. [https://neon.tech](https://neon.tech) でサインアップ(無料枠で十分)
+2. プロジェクトを作成(リージョンは日本から最も近い `ap-southeast-1` / Singapore を推奨)
+3. Neonダッシュボードの SQL Editor で以下を実行し、pgvector拡張を有効化:
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
+4. ダッシュボードの「Connection Details」から接続文字列をコピー
+   (`postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require` の形式)
+5. 環境変数として設定してから `deploy.sh`/`deploy.ps1` を実行:
+   ```bash
+   export NEON_DATABASE_URL='postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require'
+   ./deploy.sh
+   ```
+   スクリプト内でこのアプリが使う `postgresql+asyncpg://...?ssl=require` 形式に自動変換されます。
+
+## コスト最適化について
+
+このアプリの月額費用の内訳はおおよそ以下の通りです（アイドル時 = ほぼアクセスがない状態）:
+
+| リソース | アイドル時の月額目安 | 備考 |
+|---------|---------------------|------|
+| Container Apps (API/Web) | ほぼ $0 | `min-replicas=0` でスケールtoゼロ。実際に使った分だけ課金され、少量アクセスなら無料枠内に収まることが多い |
+| Neon (データベース) | $0 | 無料枠のサーバーレスPostgres。使わない間は自動でスケールtoゼロし、次回接続時に自動で復帰する（手動での起動/停止操作は不要） |
+| Container Registry (Basic) | 約 $5 | 常時起動の固定費（ACR Basicの最低ライン） |
+| Log Analytics | $0 | `deploy.sh`で`--logs-destination none`にして無効化済み（ライブログは`az containerapp logs show`で引き続き閲覧可） |
+| AI Services (GPT-5等) | 実使用分のみ | トークン課金、固定費なし |
+
+→ **固定費はACR Basicの約$5/月のみ**になります。以前はAzure Database for PostgreSQL Flexible Server
+(常時起動の時間課金、月額約$15-18)が固定費の大半を占めていましたが、Neonへの切り替えでほぼ解消されました。
+体感で「Container Appsが高い」と感じる場合は大抵`min-replicas`が0になっていない
+（`az containerapp show`で確認）ことが原因です。
 
 ## 自動デプロイ
 
@@ -76,41 +125,13 @@ az acr create \
   --admin-enabled true
 ```
 
-### 3. PostgreSQL
+### 3. データベース (Neon)
+
+Azureリソースではなく、[Neon](https://neon.tech)でプロジェクトを作成し、pgvector拡張を
+有効化してから接続文字列を控えておく（詳細は上記「Neonのセットアップ」参照）。
 
 ```bash
-# サーバー作成
-az postgres flexible-server create \
-  --resource-group rg-sankanou \
-  --name sankanou-db \
-  --location japaneast \
-  --admin-user sankanouadmin \
-  --admin-password <PASSWORD> \
-  --sku-name Standard_B1ms \
-  --tier Burstable \
-  --storage-size 32 \
-  --version 16
-
-# Azure サービスからのアクセス許可
-az postgres flexible-server firewall-rule create \
-  --resource-group rg-sankanou \
-  --name sankanou-db \
-  --rule-name AllowAzureServices \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0
-
-# pgvector 拡張有効化
-az postgres flexible-server parameter set \
-  --resource-group rg-sankanou \
-  --server-name sankanou-db \
-  --name azure.extensions \
-  --value "vector,uuid-ossp"
-
-# DB 作成
-az postgres flexible-server db create \
-  --resource-group rg-sankanou \
-  --server-name sankanou-db \
-  --database-name sankanou
+export NEON_DATABASE_URL='postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require'
 ```
 
 ### 4. Azure AI Services (GPT-5)
@@ -223,10 +244,22 @@ az ad sp create-for-rbac \
 
 ### CD トリガー条件
 
-`apps/api/**` または `docker/api/**` の変更が main にプッシュされたとき:
+CD (`.github/workflows/cd.yml`) は CI (`.github/workflows/ci.yml`) の完了イベント
+(`workflow_run`) をトリガーとし、**CI が `main` へのプッシュに対して成功した場合のみ**発火する
+（`push` イベントを直接トリガーにしていた旧構成だと CI の結果を待たずにデプロイされてしまうため）。
 
-1. ACR でイメージをビルド（git SHA タグ + latest タグ）
-2. Container App に新リビジョンをデプロイ
+CI が成功したコミットと、その1つ前のコミットとの差分を見て、変更されたパスに応じて以下を実行する:
+
+- **deploy-api**: `apps/api/**` または `docker/api/**` に変更がある場合
+  1. ACR で API イメージをビルド（git SHA タグ + latest タグ）
+  2. `sankanou-api` Container App に新リビジョンをデプロイ
+- **deploy-web**: `apps/web/**` または `docker/web/**` に変更がある場合
+  1. 現在の `sankanou-api` の URL を取得し、`NEXT_PUBLIC_API_URL` ビルド引数として渡して
+     ACR で Web イメージをビルド（git SHA タグ + latest タグ）
+  2. `sankanou-web` Container App に新リビジョンをデプロイ
+
+両方に変更があれば両方のジョブが並行して実行される。どちらの変更も無ければ、CI は動くが
+デプロイジョブはスキップされる。
 
 ## 環境変数一覧
 
@@ -251,9 +284,9 @@ az ad sp create-for-rbac \
 
 ### DB 接続エラー
 
-1. ファイアウォールルール `AllowAzureServices` (0.0.0.0) が設定されているか
-2. `DATABASE_URL` に `?ssl=require` が含まれているか
-3. PostgreSQL サーバーが `Ready` 状態か: `az postgres flexible-server show -g rg-sankanou -n sankanou-db --query state`
+1. `NEON_DATABASE_URL` が正しくコピーされているか（Neonダッシュボードの Connection Details）
+2. `DATABASE_URL` に `?ssl=require` が含まれているか（`channel_binding=require` はasyncpgが認識せずエラーになるため除去されているか）
+3. Neonプロジェクトが一時停止(idle)から復帰中でないか（初回接続は数百ms〜数秒のコールドスタートが発生することがある）
 
 ### Container App が起動しない
 

@@ -1,6 +1,28 @@
 """CISA (Certified Information Systems Auditor) プラグイン"""
 
+import json
+from pathlib import Path
+
 from src.plugins.base import CoursePlugin, ExamConfig, SynergyDef, TopicDef
+
+# シラバスの単一情報源: apps/api/seed/syllabus/cisa.json
+_SYLLABUS_PATH = Path(__file__).resolve().parents[2] / "seed" / "syllabus" / "cisa.json"
+
+
+def _load_topics(path: Path) -> list[TopicDef]:
+    """seed/syllabus/*.json からトピック階層(統合試験→Domain)を読み込みTopicDefに変換"""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    def to_topic_def(node: dict) -> TopicDef:
+        return TopicDef(
+            name=node["name"],
+            weight_pct=node.get("weight_pct", 0.0),
+            keywords=node.get("keywords", []),
+            children=[to_topic_def(c) for c in node.get("children", [])],
+        )
+
+    return [to_topic_def(part) for part in data["topics"]]
 
 
 class CISAPlugin(CoursePlugin):
@@ -22,113 +44,12 @@ class CISAPlugin(CoursePlugin):
             {"domain": 5, "name": "情報資産の保護", "questions": 41, "weight_pct": 27.0},
         ],
         format_notes="ISACA認定。4択MCQ 150問/4時間。"
-        "スケールドスコア450/800で合格（200-800スケール、正答率≒60%目安）。"
+        "スケールドスコア450/800（200-800スケール）で合格。正答率換算で概ね60〜65%が目安。"
         "COBIT/ITIL準拠。Domain 4+5で全体の50%を占める重点領域。",
     )
 
     def get_syllabus(self) -> list[TopicDef]:
-        return [
-            TopicDef(
-                name="Domain 1: 情報システム監査のプロセス",
-                weight_pct=21.0,
-                children=[
-                    TopicDef(
-                        name="IS監査の計画",
-                        weight_pct=8.0,
-                        keywords=["監査計画", "リスクベースアプローチ", "監査基準"],
-                    ),
-                    TopicDef(
-                        name="IS監査の実施",
-                        weight_pct=8.0,
-                        keywords=["証拠収集", "統制テスト", "実証テスト"],
-                    ),
-                    TopicDef(
-                        name="IS監査の報告",
-                        weight_pct=5.0,
-                        keywords=["監査報告書", "発見事項", "フォローアップ"],
-                    ),
-                ],
-            ),
-            TopicDef(
-                name="Domain 2: ITガバナンスとマネジメント",
-                weight_pct=17.0,
-                children=[
-                    TopicDef(
-                        name="ITガバナンス",
-                        weight_pct=9.0,
-                        keywords=["COBIT", "ITガバナンス構造", "IT戦略"],
-                    ),
-                    TopicDef(
-                        name="IT管理",
-                        weight_pct=8.0,
-                        keywords=["IT組織", "IT人材管理", "IT品質管理"],
-                    ),
-                ],
-            ),
-            TopicDef(
-                name="Domain 3: 情報システムの取得・開発・導入",
-                weight_pct=12.0,
-                children=[
-                    TopicDef(
-                        name="システム開発ライフサイクル",
-                        weight_pct=6.0,
-                        keywords=["SDLC", "要件定義", "設計", "テスト"],
-                    ),
-                    TopicDef(
-                        name="プロジェクト管理",
-                        weight_pct=6.0,
-                        keywords=["PMBOK", "アジャイル", "変更管理"],
-                    ),
-                ],
-            ),
-            TopicDef(
-                name="Domain 4: 情報システムの運用とレジリエンス",
-                weight_pct=23.0,
-                children=[
-                    TopicDef(
-                        name="IT運用管理",
-                        weight_pct=10.0,
-                        keywords=["ITIL", "インシデント管理", "問題管理"],
-                    ),
-                    TopicDef(
-                        name="事業継続管理",
-                        weight_pct=8.0,
-                        keywords=["BCP", "DRP", "RTO/RPO"],
-                    ),
-                    TopicDef(
-                        name="データベース管理",
-                        weight_pct=5.0,
-                        keywords=["データ管理", "データ品質", "データガバナンス"],
-                    ),
-                ],
-            ),
-            TopicDef(
-                name="Domain 5: 情報資産の保護",
-                weight_pct=27.0,
-                children=[
-                    TopicDef(
-                        name="情報セキュリティ管理",
-                        weight_pct=10.0,
-                        keywords=["セキュリティポリシー", "セキュリティフレームワーク"],
-                    ),
-                    TopicDef(
-                        name="アクセス制御",
-                        weight_pct=7.0,
-                        keywords=["認証", "認可", "ID管理", "特権管理"],
-                    ),
-                    TopicDef(
-                        name="ネットワークセキュリティ",
-                        weight_pct=5.0,
-                        keywords=["ファイアウォール", "IDS/IPS", "VPN", "暗号化"],
-                    ),
-                    TopicDef(
-                        name="脆弱性管理",
-                        weight_pct=5.0,
-                        keywords=["脆弱性スキャン", "ペネトレーションテスト", "パッチ管理"],
-                    ),
-                ],
-            ),
-        ]
+        return _load_topics(_SYLLABUS_PATH)
 
     def get_synergy_areas(self) -> list[SynergyDef]:
         return [
