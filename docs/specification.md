@@ -185,9 +185,9 @@ apps/api/
 | **Container App (API)** | `sankanou-api` | Japan East |
 | **Container App (Web)** | `sankanou-web` | Japan East |
 | **Container Registry** | `sankanouacr.azurecr.io` | Japan East |
-| **PostgreSQL** | `sankanou-db.postgres.database.azure.com` (Flexible Server v16) | Japan East |
+| **Database** | Neon (PostgreSQL 16 + pgvector, Azure外, サーバーレス無料枠) | ap-southeast-1 推奨 |
 
-**本番URL**: `https://sankanou-api.delightfulbush-953bf077.japaneast.azurecontainerapps.io`
+**本番URL**: `./deploy.sh` 実行時に出力される `sankanou-api.<ランダム文字列>.japaneast.azurecontainerapps.io` を参照
 
 ### 2.5 Docker Compose (開発環境)
 

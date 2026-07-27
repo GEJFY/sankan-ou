@@ -6,7 +6,7 @@ AI駆動型 CIA/CISA/CFE 3資格同時学習プラットフォーム
 ## Architecture
 - **Backend**: `apps/api/` - FastAPI (Python 3.11, async, Pydantic v2)
 - **Frontend**: `apps/web/` - Next.js 15 (App Router, TypeScript, Tailwind CSS)
-- **Database**: PostgreSQL 16 + pgvector (Azure Flexible Server / Docker)
+- **Database**: PostgreSQL 16 + pgvector (Neon サーバーレス / ローカルはDocker)
 - **SRS**: py-fsrs v6 (FSRS algorithm)
 - **LLM**: Azure AI Foundry (マルチプロバイダー: OpenAI + Anthropic)
   - GPT-5系: GPT-5-mini (生成), GPT-5-nano (チャット), GPT-5.2-chat (フラグシップ)
@@ -24,8 +24,9 @@ AI駆動型 CIA/CISA/CFE 3資格同時学習プラットフォーム
 - **AI Services**: `sankanou-ai` (East US 2, kind: AIServices)
 - **Container Apps**: `sankanou-api` / `sankanou-web` (Japan East)
 - **ACR**: `sankanouacr.azurecr.io`
-- **PostgreSQL**: `sankanou-db.postgres.database.azure.com` (Flexible Server, v16)
-- **API URL**: `https://sankanou-api.delightfulbush-953bf077.japaneast.azurecontainerapps.io`
+- **Database**: Neon (Azure外、`NEON_DATABASE_URL`で設定。詳細は `docs/deployment.md` 参照)
+- **API URL**: サブスクリプション変更に伴い再デプロイが必要。`./deploy.sh` 実行後に出力される
+  `sankanou-api.<ランダム文字列>.japaneast.azurecontainerapps.io` を参照すること
 
 ## Development Commands
 ```bash
